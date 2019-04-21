@@ -86,6 +86,13 @@ module cache #(
         end
     endtask
 
+    initial
+    begin
+        invalidate_cache();
+        state <= READY;
+        miss <= 0;
+    end
+
     always @(posedge clk) 
     begin
         if(!reset_n) begin
