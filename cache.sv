@@ -95,34 +95,49 @@ module cache_props(
             $past(miss, 1) && miss |-> $stable(signal);
     endproperty
 
-    // assume for verification; basically our master spec. 
-    a1: assume property(iff_instant(1, cpu_addr % 4, 0)); // cpu addr aligned
-    a2: assume property(iff_instant(1, mem_addr % 4, 0)); // mem_addr aligned
-    a3: assume property(iff_instant(1, cpu_we && cpu_re, 0)); // no read/write at same time 
-    a4: assume property(iff_instant(miss, cpu_we || cpu_re, 0)); // no asserting enables during transaction
-    a5: assume property(iff_instant(1, mem_wstb, 4'b1111)); // mem_wstb = '1111
-    a6: assume property(implies_1cycle(cpu_we, !cpu_we)); // 1 cycle we 
-    a7: assume property(implies_1cycle(cpu_re, !cpu_re)); // 1 cycle re
-    // a8: assume property(stable_1cycle(cpu_addr)); // addr stable for at least one cycle after enable
-    // a9: assume property(stable_1cycle(cpu_data_in)); // data stable for at least one cycle after enable
-    // a10: assume property(stable_1cycle(cpu_wstb)); // wstb stable for at least one cycle after enable
-    // a11: assume property(stable_during_miss(cpu_addr)); // cpu addr stable during entire transaciton
-    // a12: assume property(stable_during_miss(cpu_data_in)); // cpu data stable during entire transaction
-    // a13: assume property(stable_during_miss(cpu_wstb)); // cpu data stable during entire transaction
-    // a14: assume property(iff_instant(!miss, mem_addr, cpu_addr)); // mem_addr == cpu_addr if not handling miss
-    // a15: assume property(iff_instant(!miss, mem_data_in, 0)); // mem_data_in == 0 if not handling miss
-    // a16: assume property(iff_instant(!miss, mem_last, 0)); // mem_last == 0 if not handling miss
-    // a17: assume property(iff_instant(!miss, mem_data_valid, 0)); // mem_data_valid == 0 if not handling miss
-    // a18: assume property(iff_1cycle(miss && counter != 31 && mem_data_valid, past_mem_addr + 4, mem_addr)); // mem_address increments by word size when filling cache line
-    // a19: assume property(iff_instant(miss, counter == 31, mem_last)); // mem last only asserted for last word
-    // a20: assume property(implies_1cycle(mem_last, !mem_last)); // mem_last only asserted for one cycle 
-    // a21: assume property(implies_1cycle(mem_data_valid, !mem_data_valid)); // mem data valid only asserted for 1 cycle 
-    // a22: assume property(implies_instant(mem_last, mem_data_valid)); // mem last can only be high if mem valid is high
-    // a23: assume property(implies_instant(!mem_data_valid, !mem_last)); // if mem valid is not high, mem last must not be high 
-    // a24: assume property(@(posedge clk) cpu_data_in == 32'hAAAAAAAA || cpu_data_in == 32'h55555555);
-    // a25: assume property(@(posedge clk) mem_data_in == 32'hAAAAAAAA || mem_data_in == 32'h55555555);
-    // a26: assume property(implies_instant(miss && $changed(mem_data_in), $rose(mem_data_valid)));
-    // a27: assume property(implies_past(miss && $changed(mem_addr), mem_data_valid));
+    // cpu addr aligned
+    assume_cpu_aligned: assume property(iff_instant(1, cpu_addr % 4, 0)); 
+    // mem addr aligned
+    assume_mem_aligned: assume property(iff_instant(1, mem_addr % 4, 0)); 
+    // no read/write at same time 
+    assume_mutex_rw: assume property(iff_instant(1, cpu_we && cpu_re, 0)); 
+    // only r/w while ready
+    assume_rw_only_in_ready: assume property(iff_instant($rose(cpu_we) || $rose(cpu_re), state, READY); 
+    // no r/w signal while handling miss 
+    assume_no_rw_while_busy: assume property(iff_instant(state == REPLACE, cpu_we || cpu_re, 0)); 
+    // mem_wstb = '1111
+    assume_const_mem_stb: assume property(iff_instant(1, mem_wstb, 4'b1111)); 
+    // 1 cycle we
+    assume_we_only_1_cycle: assume property(implies_1cycle(cpu_we, !cpu_we)); 
+    // 1 cycle re
+    assume_re_only_1_cycle: assume property(implies_1cycle(cpu_re, !cpu_re)); 
+    // mem_addr == cpu_addr if not handling miss
+    assume_mem_addr_no_miss: assume property(iff_instant(state == READY, mem_addr, cpu_addr)); 
+    // mem_last == 0 if not handling miss
+    assume_mem_last_no_miss: assume property(iff_instant(state == READY, mem_last, 0)); 
+    // mem_data_valid == 0 if not handling miss
+    assume_mem_valid_no_miss: assume property(iff_instant(state == READY, mem_data_valid, 0)); 
+    // mem_address increments by word size when filling cache line
+    assume_inc_mem_addr: assume property(iff_1cycle(state == REPLACE && counter != 31 && mem_data_valid, past_mem_addr + 4, mem_addr)); 
+    // mem_address only changes after data valid
+    assume_chg_mem_addr_on_valid: assume property(implies_past($changed(mem_addr), mem_data_valid);
+    // mem last only asserted for last word
+    assume_mem_last_set: assume property(iff_instant(state == REPLACE, counter == 31, mem_last)); 
+    // 1 cycle mem last
+    assume_mem_last_1_cycle: assume property(implies_1cycle(mem_last, !mem_last)); 
+    // 1 cycle data_valid
+    assume_mem_data_valid_1_cycle: assume property(implies_1cycle(mem_data_valid, !mem_data_valid)); 
+    // if last, data must be valid
+    assume_mem_last_implies_valid_1: assume property(implies_instant(mem_last, mem_data_valid)); 
+    // if data is not valid, it is not the last data 
+    assume_mem_last_implies_valid_2: assume property(implies_instant(!mem_data_valid, !mem_last)); 
+    //  cpu data assumes... 
+    assume_cpu_data_in: assume property(@(posedge clk) cpu_data_in == 32'hAAAAAAAA || cpu_data_in == 32'h55555555 || cpu_data_in == 32'hFFFFFFFF || cpu_data_in == 32'h0);
+    // mem data assumes
+    assume_mem_data_in: assume property(@(posedge clk) mem_data_in == 32'hAAAAAAAA || mem_data_in == 32'h55555555 || mem_data_in == 32'hFFFFFFFF || mem_data_in == 32'h0);
+    // simulates actual operating scenario; when data is ready from mem (i.e. mem_data_in changed), make data valid
+    mem_data_valid_when_data: assume property(implies_instant($changed(mem_data_in), $rose(mem_data_valid)));
+
     a28: assume property(@(posedge clk) !rst_seen |-> reset_n == 0);
     a29: assume property(@(posedge clk) rst_seen |-> reset_n == 1);
     
