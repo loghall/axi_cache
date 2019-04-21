@@ -1,6 +1,7 @@
 module cache_props(  
     input wire clk, 
     input wire reset_n, 
+    input wire faux_rst,
     input wire [31 : 0] cpu_addr, 
     input wire [31 : 0] cpu_data_in, 
     input wire cpu_we,
@@ -33,29 +34,29 @@ module cache_props(
     wire [31 : 0] cache_data = {byte3, byte2, byte1, byte0}; 
 
     reg [31 : 0] past_mem_addr;
-    reg [4 : 0] counter;
+    reg [4 : 0] counter; 
     reg rst_seen;
 
     localparam READY = 1'b0, REPLACE = 1'b1; 
 
 	property iff_instant(pre, expression1, expression2); 
 		@(posedge clk) disable iff(!reset_n)
-			pre && rst_seen |-> expression1 == expression2; 
+			pre |-> expression1 == expression2; 
 	endproperty 
 
     property iff_1cycle(pre, expression1, expression2); 
 		@(posedge clk) disable iff(!reset_n)
-			pre && rst_seen |-> ##1 expression1 == expression2; 
+			pre |-> ##1 expression1 == expression2; 
 	endproperty  
 
 	property implies_instant(expression1, expression2); 
 		@(posedge clk) disable iff(!reset_n)
-			expression1 && rst_seen |-> expression2; 
+			expression1 |-> expression2; 
 	endproperty 
 
     property implies_1cycle(expression1, expression2); 
 		@(posedge clk) disable iff(!reset_n)
-			expression1 && rst_seen |-> ##1 expression2; 
+			expression1 |-> ##1 expression2; 
 	endproperty 
 
     property reset_cond(reset_cond, expression1); 
@@ -66,32 +67,32 @@ module cache_props(
 
 	property implies_past(expression_pre, expression_post);
 		@(posedge clk) disable iff(!reset_n)
-			expression_post && rst_seen |-> $past(expression_pre, 1); 
+			expression_post |-> $past(expression_pre, 1); 
 	endproperty 
 
     property past_implies(expression_pre, current_condition, expression_post);
 		@(posedge clk) disable iff(!reset_n)
-			$past(expression_pre, 1) && current_condition && rst_seen |-> expression_post; 
+			$past(expression_pre, 1) && current_condition |-> expression_post; 
 	endproperty 
 
     property signal_is_stable(stable_expression, signal);
         @(posedge clk) disable iff(!reset_n)
-            stable_expression && rst_seen |-> $stable(signal); 
+            stable_expression |-> $stable(signal); 
     endproperty
 
     property mem_addr_no_miss;
         @(posedge clk) disable iff(!reset_n)
-            !miss && rst_seen |-> (mem_addr == cpu_addr) && (mem_data == 0);
+            !miss |-> (mem_addr == cpu_addr) && (mem_data == 0);
     endproperty 
     
     property stable_1cycle(signal);
         @(posedge clk) disable iff(!reset_n)
-            (cpu_re || cpu_we) && rst_seen |-> ##1 $stable(signal);
+            (cpu_re || cpu_we) |-> ##1 $stable(signal);
     endproperty
 
     property stable_during_miss(signal);
         @(posedge clk) disable iff(!reset_n)
-            $past(miss, 1) && miss && rst_seen |-> $stable(signal);
+            $past(miss, 1) && miss |-> $stable(signal);
     endproperty
 
     // assume for verification; basically our master spec. 
@@ -108,22 +109,22 @@ module cache_props(
     // a11: assume property(stable_during_miss(cpu_addr)); // cpu addr stable during entire transaciton
     // a12: assume property(stable_during_miss(cpu_data_in)); // cpu data stable during entire transaction
     // a13: assume property(stable_during_miss(cpu_wstb)); // cpu data stable during entire transaction
-    a14: assume property(iff_instant(!miss, mem_addr, cpu_addr)); // mem_addr == cpu_addr if not handling miss
-    a15: assume property(iff_instant(!miss, mem_data_in, 0)); // mem_data_in == 0 if not handling miss
-    a16: assume property(iff_instant(!miss, mem_last, 0)); // mem_last == 0 if not handling miss
-    a17: assume property(iff_instant(!miss, mem_data_valid, 0)); // mem_data_valid == 0 if not handling miss
-    a18: assume property(iff_1cycle(miss && counter != 31 && mem_data_valid, past_mem_addr + 4, mem_addr)); // mem_address increments by word size when filling cache line
-    a19: assume property(iff_instant(miss, counter == 31, mem_last)); // mem last only asserted for last word
-    a20: assume property(implies_1cycle(mem_last, !mem_last)); // mem_last only asserted for one cycle 
-    a21: assume property(implies_1cycle(mem_data_valid, !mem_data_valid)); // mem data valid only asserted for 1 cycle 
-    a22: assume property(implies_instant(mem_last, mem_data_valid)); // mem last can only be high if mem valid is high
-    a23: assume property(implies_instant(!mem_data_valid, !mem_last)); // if mem valid is not high, mem last must not be high 
-    a24: assume property(@(posedge clk) cpu_data_in == 32'hAAAAAAAA || cpu_data_in == 32'h55555555);
-    a25: assume property(@(posedge clk) mem_data_in == 32'hAAAAAAAA || mem_data_in == 32'h55555555);
-    a26: assume property(implies_instant(miss && $changed(mem_data_in), $rose(mem_data_valid)));
-    a27: assume property(implies_past(miss && $changed(mem_addr), mem_data_valid));
+    // a14: assume property(iff_instant(!miss, mem_addr, cpu_addr)); // mem_addr == cpu_addr if not handling miss
+    // a15: assume property(iff_instant(!miss, mem_data_in, 0)); // mem_data_in == 0 if not handling miss
+    // a16: assume property(iff_instant(!miss, mem_last, 0)); // mem_last == 0 if not handling miss
+    // a17: assume property(iff_instant(!miss, mem_data_valid, 0)); // mem_data_valid == 0 if not handling miss
+    // a18: assume property(iff_1cycle(miss && counter != 31 && mem_data_valid, past_mem_addr + 4, mem_addr)); // mem_address increments by word size when filling cache line
+    // a19: assume property(iff_instant(miss, counter == 31, mem_last)); // mem last only asserted for last word
+    // a20: assume property(implies_1cycle(mem_last, !mem_last)); // mem_last only asserted for one cycle 
+    // a21: assume property(implies_1cycle(mem_data_valid, !mem_data_valid)); // mem data valid only asserted for 1 cycle 
+    // a22: assume property(implies_instant(mem_last, mem_data_valid)); // mem last can only be high if mem valid is high
+    // a23: assume property(implies_instant(!mem_data_valid, !mem_last)); // if mem valid is not high, mem last must not be high 
+    // a24: assume property(@(posedge clk) cpu_data_in == 32'hAAAAAAAA || cpu_data_in == 32'h55555555);
+    // a25: assume property(@(posedge clk) mem_data_in == 32'hAAAAAAAA || mem_data_in == 32'h55555555);
+    // a26: assume property(implies_instant(miss && $changed(mem_data_in), $rose(mem_data_valid)));
+    // a27: assume property(implies_past(miss && $changed(mem_addr), mem_data_valid));
     a28: assume property(@(posedge clk) !rst_seen |-> reset_n == 0);
-    a29: assume property(@(posedge clk) rst_seen |-> ##1 reset_n == 1);
+    a29: assume property(@(posedge clk) rst_seen |-> reset_n == 1);
     
     // assertions 
     p1: assert property(iff_1cycle(cpu_re || cpu_we, tag_array[set_idx][way_idx] != tag || valid_bits[set_idx][way_idx] != 1'b1, $rose(miss))); // miss set correctly 
@@ -167,6 +168,7 @@ module Wrapper;
 bind cache cache_props bind1(
     .clk(clk), 
     .reset_n(reset_n), 
+    .faux_rst(faux_rst),
     .cpu_addr(cpu_addr), 
     .cpu_data_in(cpu_data_in), 
     .cpu_we(cpu_we),
