@@ -9,6 +9,7 @@ module cache #(
 (  
     input wire clk, 
     input wire reset_n, 
+    input wire faux_rst,
     input wire [ADDR_WIDTH - 1 : 0] cpu_addr, 
     input wire [DATA_WIDTH - 1 : 0] cpu_data_in, 
     input wire cpu_we,
