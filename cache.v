@@ -96,22 +96,26 @@ module cache #(
         else begin
             case(state) 
                 READY: begin
-                    if (( cpu_re || cpu_we ) &&  
-                        (( tag_array[set_idx][way_idx] != tag ) || 
-                        ( valid_bits[set_idx][way_idx] == 1'b0 ))) begin // cache miss
-                        miss <= 1'b1; 
-                        state <= REPLACE; 
-                    end
-                    else if (cpu_re == 1'b1) begin // read the cache
-                        read_cache(); 
-                    end 
-                    else if (cpu_we == 1'b1) begin // write the cache 
-                        write_cache(cpu_data_in, cpu_wstb, cpu_line_idx);
+                    miss <= 1'b1;
+                    state <= REPLACE; 
+                    if (cpu_re || cpu_we) begin
+                        if(valid_bits[set_idx][way_idx] == 1'b1) begin
+                            if(tag_array[set_idx][way_idx] == tag) begin
+                                miss <= 1'b0;
+                                state <= READY; 
+                                if(cpu_re) begin
+                                    read_cache();
+                                end
+                                else begin
+                                    write_cache(cpu_data_in, cpu_wstb, cpu_line_idx);
+                                end
+                            end
+                        end
                     end 
                     else begin
+                        miss <= 1'b0;
                         state <= READY; 
-                    end 
-                end 
+                    end
                 REPLACE: begin 
                     if(mem_data_valid) begin
                         write_cache(mem_data_in, mem_wstb, mem_line_idx); 
