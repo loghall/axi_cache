@@ -33,28 +33,29 @@ module cache_props(
     wire [31 : 0] cache_data = {byte3, byte2, byte1, byte0}; 
 
     reg [31 : 0] past_mem_addr;
-    reg [4 : 0] counter; 
+    reg [4 : 0] counter;
+    reg rst_seen;
 
     localparam READY = 1'b0, REPLACE = 1'b1; 
 
 	property iff_instant(pre, expression1, expression2); 
 		@(posedge clk) disable iff(!reset_n)
-			pre |-> expression1 == expression2; 
+			pre && rst_seen |-> expression1 == expression2; 
 	endproperty 
 
     property iff_1cycle(pre, expression1, expression2); 
 		@(posedge clk) disable iff(!reset_n)
-			pre |-> ##1 expression1 == expression2; 
+			pre && rst_seen |-> ##1 expression1 == expression2; 
 	endproperty  
 
 	property implies_instant(expression1, expression2); 
 		@(posedge clk) disable iff(!reset_n)
-			expression1 |-> expression2; 
+			expression1 && rst_seen |-> expression2; 
 	endproperty 
 
     property implies_1cycle(expression1, expression2); 
 		@(posedge clk) disable iff(!reset_n)
-			expression1 |-> ##1 expression2; 
+			expression1 && rst_seen |-> ##1 expression2; 
 	endproperty 
 
     property reset_cond(reset_cond, expression1); 
@@ -65,39 +66,39 @@ module cache_props(
 
 	property implies_past(expression_pre, expression_post);
 		@(posedge clk) disable iff(!reset_n)
-			expression_post |-> $past(expression_pre, 1); 
+			expression_post && rst_seen |-> $past(expression_pre, 1); 
 	endproperty 
 
     property past_implies(expression_pre, current_condition, expression_post);
 		@(posedge clk) disable iff(!reset_n)
-			$past(expression_pre, 1) && current_condition |-> expression_post; 
+			$past(expression_pre, 1) && current_condition && rst_seen |-> expression_post; 
 	endproperty 
 
     property signal_is_stable(stable_expression, signal);
         @(posedge clk) disable iff(!reset_n)
-            stable_expression |-> $stable(signal); 
+            stable_expression && rst_seen |-> $stable(signal); 
     endproperty
 
     property mem_addr_no_miss;
         @(posedge clk) disable iff(!reset_n)
-            !miss |-> (mem_addr == cpu_addr) && (mem_data == 0);
+            !miss && rst_seen |-> (mem_addr == cpu_addr) && (mem_data == 0);
     endproperty 
     
     property stable_1cycle(signal);
         @(posedge clk) disable iff(!reset_n)
-            (cpu_re || cpu_we) |-> ##1 $stable(signal);
+            (cpu_re || cpu_we) && rst_seen |-> ##1 $stable(signal);
     endproperty
 
     property stable_during_miss(signal);
         @(posedge clk) disable iff(!reset_n)
-            $past(miss, 1) && miss |-> $stable(signal);
+            $past(miss, 1) && miss && rst_seen |-> $stable(signal);
     endproperty
 
     // assume for verification; basically our master spec. 
     a1: assume property(iff_instant(1, cpu_addr % 4, 0)); // cpu addr aligned
     a2: assume property(iff_instant(1, mem_addr % 4, 0)); // mem_addr aligned
     a3: assume property(iff_instant(1, cpu_we && cpu_re, 0)); // no read/write at same time 
-    // a4: assume property(iff_instant(miss, cpu_we || cpu_re, 0)); // no asserting enables during transaction
+    a4: assume property(iff_instant(miss, cpu_we || cpu_re, 0)); // no asserting enables during transaction
     a5: assume property(iff_instant(1, mem_wstb, 4'b1111)); // mem_wstb = '1111
     a6: assume property(implies_1cycle(cpu_we, !cpu_we)); // 1 cycle we 
     a7: assume property(implies_1cycle(cpu_re, !cpu_re)); // 1 cycle re
@@ -121,6 +122,8 @@ module cache_props(
     a25: assume property(@(posedge clk) mem_data_in == 32'hAAAAAAAA || mem_data_in == 32'h55555555);
     a26: assume property(implies_instant(miss && $changed(mem_data_in), $rose(mem_data_valid)));
     a27: assume property(implies_past(miss && $changed(mem_addr), mem_data_valid));
+    a28: assume property(@(posedge clk) !rst_seen |-> reset_n == 0);
+    a29: assume property(@(posedge clk) rst_seen |-> ##1 reset_n == 1);
     
     // assertions 
     p1: assert property(iff_1cycle(cpu_re || cpu_we, tag_array[set_idx][way_idx] != tag || valid_bits[set_idx][way_idx] != 1'b1, $rose(miss))); // miss set correctly 
@@ -151,6 +154,10 @@ module cache_props(
             counter <= counter + 5'b1;           
         end
 
+    end
+
+    always@(posedge clk) begin
+        if(reset_n == 0) rst_seen <= 1;
     end
 
 endmodule
