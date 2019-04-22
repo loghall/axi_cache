@@ -150,7 +150,7 @@ module cache_props(
         )
     ); 
     // mem_addr == line aligned cpu_addr for counter == 0
-    assume mem_addr_line_aligned: assume property(
+    mem_addr_line_aligned: assume property(
         iff_instant(
             clk, faux_rst, 
             state == REPLACE && counter ==0,
@@ -346,7 +346,7 @@ module cache_props(
         )
     );
     // check cache data if mem data valid 
-    assert_cache_fill: assert property
+    assert_cache_fill: assert property(
         iff_1cycle(
             clk, faux_rst, 
             (state == REPLACE) && mem_data_valid, 
