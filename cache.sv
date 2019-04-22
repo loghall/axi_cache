@@ -140,13 +140,22 @@ module cache_props(
             !cpu_re
         )
     ); 
-    // mem_addr == cpu_addr if not handling miss
+    // mem_addr == line aligned cpu_addr if not handling miss
     assume_mem_addr_no_miss: assume property(
         iff_instant(
             clk, faux_rst, 
             state == READY, 
             mem_addr, 
-            cpu_addr
+            {(cpu_addr >> 7), 7'b0}
+        )
+    ); 
+    // mem_addr == line aligned cpu_addr for counter == 0
+    assume mem_addr_line_aligned: assume property(
+        iff_instant(
+            clk, faux_rst, 
+            state == REPLACE && counter ==0,
+            mem_addr, 
+            {(cpu_addr >> 7), 7'b0}
         )
     ); 
     // mem_last == 0 if not handling miss
