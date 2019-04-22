@@ -350,9 +350,8 @@ module cache_props(
     // -------------------- reset_condition -------------------- 
     
     for(i = 0; i < 64; i = i + 1) begin: reset_valid_bits_outer
-        for(j = 0; j < 4; j = j + 1) begin: reset_ valid_bits_inner
-            // assert_reset_valid_bits: assert property(reset_cond(clk, !reset_n, valid_bits[i][j] == 1'b0)); 
-            rst_seen <= rst_seen;
+        for(j = 0; j < 4; j = j + 1) begin: reset_valid_bits_inner
+            assert_reset_valid_bits: assert property(reset_cond(clk, !reset_n, valid_bits[i][j] == 1'b0)); 
         end
     end 
     
