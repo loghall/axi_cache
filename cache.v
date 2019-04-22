@@ -124,6 +124,7 @@ module cache #(
                         miss <= 1'b0;
                         state <= READY; 
                     end
+                end
                 REPLACE: begin 
                     if(mem_data_valid) begin
                         write_cache(mem_data_in, mem_wstb, mem_line_idx); 

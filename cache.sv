@@ -24,7 +24,25 @@ module cache_props(
     input valid_bits [63 : 0][3 : 0], 
     input state
 );
-    wire req = cpu_re || cpu_we; 
+    // cache states 
+    localparam READY = 1'b0, REPLACE = 1'b1; 
+
+    // latch CPU signals 
+    reg [31 : 0] latch_cpu_data_in;
+    reg [31 : 0] latch_cpu_addr;  
+    reg [16 : 0] latch_tag;  
+    reg [5 : 0] latch_set_idx; 
+    reg [1 : 0] latch_way_idx; 
+    reg [6 : 0] latch_cpu_line_idx; 
+
+    // latch mem signals 
+    reg [31 : 0] latch_mem_data_in; 
+    reg [31 : 0] latch_mem_addr;
+    reg [6 : 0] latch_mem_line_idx;
+    reg [4 : 0] counter; 
+    reg rst_seen;
+
+    wire req_now = cpu_re || cpu_we; 
 
     // generate set, way for current address (NOW); used to determine misses 
     wire [16 : 0] tag_now = cpu_addr[31 : 15]; 
@@ -44,25 +62,7 @@ module cache_props(
     wire [7 : 0] byte3 = data_cache[latch_set_idx][latch_way_idx][latch_line_idx + 3];
     wire [31 : 0] cache_data = {byte3, byte2, byte1, byte0}; 
 
-    // latch CPU signals 
-    reg [31 : 0] latch_cpu_data_in;
-    reg [31 : 0] latch_cpu_addr;  
-    reg [16 : 0] latch_tag;  
-    reg [5 : 0] latch_set_idx; 
-    reg [1 : 0] latch_way_idx; 
-    reg [6 : 0] latch_cpu_line_idx; 
-
-    // latch mem signals 
-    reg [31 : 0] latch_mem_data_in; 
-    reg [31 : 0] latch_mem_addr;
-    reg [6 : 0] latch_mem_line_idx;
-    reg [4 : 0] counter; 
-    reg rst_seen;
-
-    // cache states 
-    localparam READY = 1'b0, REPLACE = 1'b1; 
-
-    integer i, j, k, l; 
+    genvar i, j, k, l; 
 
     ///////////////////////////////////////////////////////////
     //
@@ -201,7 +201,7 @@ module cache_props(
     assume_mem_data_in: assume property(iff_instant(
                                 clk, faux_rst, 
                                 1,
-                                mem_data_in == 32'hAAAAAAAA || mem_data_in == 32'h55555555 || mem_data_in == 32'hFFFFFFFF || mem_data_in == 32'h0),
+                                (mem_data_in == 32'hAAAAAAAA || mem_data_in == 32'h55555555 || mem_data_in == 32'hFFFFFFFF || mem_data_in == 32'h0),
                                 1
     ));
     // simulates actual operating scenario; when data is ready from mem (i.e. mem_data_in changed), make data valid
@@ -230,14 +230,14 @@ module cache_props(
     // transition to replace on a miss 
     assert_rdy_to_rep: assert property(iff_1cycle(
                                 clk, faux_rst, 
-                                (state == READY) && cpu_re || cpu_we) && miss_now, 
+                                (state == READY) && req_now && miss_now, 
                                 state, 
                                 REPLACE
     )); 
     // transition to ready when done servicing miss 
     assert_rep_to_rdy: assert property(iff_1cycle(
                                 clk, faux_rst, 
-                                (state == REPLACE) && mem_last), 
+                                (state == REPLACE) && mem_last, 
                                 state, 
                                 READY
     )); 
@@ -247,7 +247,7 @@ module cache_props(
     assert_rdy_to_rep_chk: assert property(iff_instant(
                                 clk, faux_rst, 
                                 (state == REPLACE) && $past(state == READY, 1), 
-                                $past(miss_now && req, 1), 
+                                $past(miss_now && req_now, 1), 
                                 1
     )); 
     // if we did transition from rep->rdy, mem_last must have been asserted last cycle.
@@ -333,13 +333,13 @@ module cache_props(
             for(k = 0; k < 128; k = k + 1) begin: hold_value_cache3
                 assert_cache_hold_value_hit: assert property(iff_instant(
                     clk, faux_rst, 
-                    $changed(cache[i][j][k]), 
-                    $past(state == READY && req && !miss_now && i == latch_set_idx && j == latch_way_idx && ({(k >> 2), 2'b00} == latch_cpu_line_idx) && cpu_wstb[k % 4] == 1, 1), 
+                    $changed(data_cache[i][j][k]), 
+                    $past(state == READY && req_now && !miss_now && i == latch_set_idx && j == latch_way_idx && ({(k >> 2), 2'b00} == latch_cpu_line_idx) && cpu_wstb[k % 4] == 1, 1), 
                     1
                 )); 
                 assert_cache_hold_value_miss: assert property(iff_instant(
                     clk, faux_rst, 
-                    $changed(cache[i][j][k]), 
+                    $changed(data_cache[i][j][k]), 
                     $past(state == REPLACE && mem_data_valid && i == latch_set_idx && j == latch_way_idx && ({(k >> 2), 2'b00} == latch_mem_line_idx), 1), 
                     1
                 )); 
@@ -348,12 +348,14 @@ module cache_props(
     end
     
     // -------------------- reset_condition -------------------- 
+    
     for(i = 0; i < 64; i = i + 1) begin: reset_valid_bits_outer
         for(j = 0; j < 4; j = j + 1) begin: reset_ valid_bits_inner
-            assert_reset_valid_bits: assert property(reset_cond(clk, !reset_n, valid_bits[i][j] == 1'b0)); 
+            // assert_reset_valid_bits: assert property(reset_cond(clk, !reset_n, valid_bits[i][j] == 1'b0)); 
+            rst_seen <= rst_seen;
         end
     end 
-
+    
     // -------------------- misc --------------------
     p12: assert property(reset_cond(clk, !reset_n, state == READY));
     p13: assert property(reset_cond(clk, !reset_n, miss == 1'b0));
@@ -379,7 +381,7 @@ module cache_props(
             counter <= 0; 
         end
         else begin 
-            if (state == READY && req) begin // latch CPU data if valid request
+            if (state == READY && req_now) begin // latch CPU data if valid request
                 latch_cpu_addr <= cpu_addr;
                 latch_cpu_data_in <= cpu_data_in; 
                 latch_tag = cpu_addr[31 : 15]; 
