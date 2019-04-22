@@ -72,125 +72,147 @@ module cache_props(
 
     // cpu addr aligned
     assume_cpu_aligned: assume property(iff_instant(
+                                clk, faux_rst,
                                 1, 
                                 cpu_addr % 4, 
                                 0
     )); 
     // mem addr aligned
     assume_mem_aligned: assume property(iff_instant(
+                                clk, faux_rst,
                                 1, 
                                 mem_addr % 4, 
                                 0
     )); 
     // no read/write at same time 
     assume_mutex_rw: assume property(iff_instant(
+                                clk, faux_rst, 
                                 1, 
                                 cpu_we && cpu_re, 
                                 0
     )); 
     // only r/w while ready
     assume_rw_only_in_ready: assume property(iff_instant(
+                                clk, faux_rst,
                                 $rose(cpu_we) || $rose(cpu_re), 
                                 state, 
                                 READY
     )); 
     // no r/w signal while handling miss 
     assume_no_rw_while_busy: assume property(iff_instant(
+                                clk, faux_rst, 
                                 state == REPLACE, 
                                 cpu_we || cpu_re, 
                                 0
     )); 
     // mem_wstb = '1111
     assume_const_mem_stb: assume property(iff_instant(
+                                clk, faux_rst, 
                                 1, 
                                 mem_wstb, 
                                 4'b1111
     )); 
     // 1 cycle we
     assume_we_only_1_cycle: assume property(implies_1cycle(
+                                clk, faux_rst, 
                                 cpu_we, 
                                 !cpu_we
     )); 
     // 1 cycle re
     assume_re_only_1_cycle: assume property(implies_1cycle(
+                                clk, faux_rst, 
                                 cpu_re, 
                                 !cpu_re
     )); 
     // mem_addr == cpu_addr if not handling miss
     assume_mem_addr_no_miss: assume property(iff_instant(
+                                clk, faux_rst, 
                                 state == READY, 
                                 mem_addr, 
                                 cpu_addr
     )); 
     // mem_last == 0 if not handling miss
     assume_mem_last_no_miss: assume property(iff_instant(
+                                clk, faux_rst, 
                                 state == READY, 
                                 mem_last, 
                                 0
     )); 
     // mem_data_valid == 0 if not handling miss
     assume_mem_valid_no_miss: assume property(iff_instant(
+                                clk, faux_rst, 
                                 state == READY, 
                                 mem_data_valid, 
                                 0
     )); 
     // mem_address increments by word size when filling cache line
     assume_inc_mem_addr: assume property(iff_1cycle(
+                                clk, faux_rst, 
                                 state == REPLACE && counter != 31 && mem_data_valid, 
                                 latch_mem_addr + 4, 
                                 mem_addr
     )); 
     // mem_address only changes after data valid
     assume_chg_mem_addr_on_valid: assume property(iff_instant(
+                                clk, faux_rst, 
                                 $changed(mem_addr), 
                                 $past(mem_data_valid, 1),
                                 1
     ));
     // mem last only asserted for last word
     assume_mem_last_set: assume property(iff_instant(
+                                clk, faux_rst, 
                                 state == REPLACE, 
                                 counter == 31, 
                                 mem_last
     )); 
     // 1 cycle mem last
     assume_mem_last_1_cycle: assume property(implies_1cycle(
+                                clk, faux_rst, 
                                 mem_last, 
                                 !mem_last
     )); 
     // 1 cycle data_valid
     assume_mem_data_valid_1_cycle: assume property(implies_1cycle(
+                                clk, faux_rst, 
                                 mem_data_valid, 
                                 !mem_data_valid
     )); 
     // if last, data must be valid
     assume_mem_last_implies_valid_1: assume property(implies_instant(
+                                clk, faux_rst, 
                                 mem_last,
                                 mem_data_valid
     )); 
     // if data is not valid, it is not the last data 
     assume_mem_last_implies_valid_2: assume property(implies_instant(
+                                clk, faux_rst, 
                                 !mem_data_valid, 
                                 !mem_last
     )); 
     //  cpu data assumes... 
     assume_cpu_data_in: assume property(iff_instant(
+                                clk, faux_rst, 
                                 1, 
                                 cpu_data_in == 32'hAAAAAAAA || cpu_data_in == 32'h55555555 || cpu_data_in == 32'hFFFFFFFF || cpu_data_in == 32'h0, 
                                 1
     ));
     // mem data assumes
     assume_mem_data_in: assume property(iff_instant(
+                                clk, faux_rst, 
                                 1,
                                 mem_data_in == 32'hAAAAAAAA || mem_data_in == 32'h55555555 || mem_data_in == 32'hFFFFFFFF || mem_data_in == 32'h0),
                                 1
     ));
     // simulates actual operating scenario; when data is ready from mem (i.e. mem_data_in changed), make data valid
     assume_mem_data_valid_when_data: assume property(implies_instant(
+                                clk, faux_rst, 
                                 $changed(mem_data_in), 
                                 $rose(mem_data_valid)
     ));
     // misc for jaspergold reset stuff; reset asserts automatically if it hasn't been triggered
     assume_force_reset: assume property(iff_instant(
+                                clk, faux_rst, 
                                 !rst_seen,
                                 reset_n, 
                                 0
@@ -207,12 +229,14 @@ module cache_props(
     // -------------------- required state transitions --------------------
     // transition to replace on a miss 
     assert_rdy_to_rep: assert property(iff_1cycle(
+                                clk, faux_rst, 
                                 (state == READY) && cpu_re || cpu_we) && miss_now, 
                                 state, 
                                 REPLACE
     )); 
     // transition to ready when done servicing miss 
     assert_rep_to_rdy: assert property(iff_1cycle(
+                                clk, faux_rst, 
                                 (state == REPLACE) && mem_last), 
                                 state, 
                                 READY
@@ -221,12 +245,14 @@ module cache_props(
     // -------------------- state transition checkers --------------------
     // if we did transition from rdy->rep, a miss and a request must have been asserted last cycle. 
     assert_rdy_to_rep_chk: assert property(iff_instant(
+                                clk, faux_rst, 
                                 (state == REPLACE) && $past(state == READY, 1), 
                                 $past(miss_now && req, 1), 
                                 1
     )); 
     // if we did transition from rep->rdy, mem_last must have been asserted last cycle.
     assert_rep_to_rdy_chk: assert property(iff_instant(
+                                clk, faux_rst, 
                                 (state == READY) && $past(state == REPLACE, 1), 
                                 $past(mem_last, 1), 
                                 1
@@ -235,30 +261,35 @@ module cache_props(
     // -------------------- r/w value checks --------------------
     // check cpu_data_out if no miss on read 
     assert_read_no_miss: assert property(iff_1cycle(
+                                clk, faux_rst, 
                                 (state == READY) && cpu_re && !miss_now, 
                                 cache_data, 
                                 cpu_data_out
     )); 
     // check cache data if no miss on write
     assert_write_no_miss: assert property(iff_1cycle(
+                                clk, faux_rst, 
                                 (state == READY) && cpu_we && !miss_now, 
                                 cache_data, 
                                 latch_cpu_data_in
     ));
     // check cache data if mem data valid 
     assert_cache_fill: assert property(iff_1cycle(
+                                clk, faux_rst, 
                                 (state == REPLACE) && mem_data_valid, 
                                 cache_data, 
                                 latch_mem_data_in
     )); 
     // assert tag updated correctly after replacement
     assert_tag_update: assert property(iff_1cycle(
+                                clk, faux_rst, 
                                 (state == REPLACE) && mem_last, 
                                 tag_array[latch_set_idx][latch_way_idx], 
                                 latch_tag
     )); 
     // assert valid updated correctly after replacement 
     assert_valid_update_valud: assert property(iff_1cycle(
+                                clk, faux_rst, 
                                 state == REPLACE && mem_last, 
                                 valid_bits[latch_set_idx][latch_way_idx], 
                                 1'b1
@@ -267,6 +298,7 @@ module cache_props(
     // -------------------- signal checks --------------------
     // miss only high while in replace
     assert_miss_high: assert property(iff_instant(
+                                clk, faux_rst, 
                                 1, 
                                 state == REPLACE, 
                                 miss
@@ -277,6 +309,7 @@ module cache_props(
     for(i = 0; i < 64; i = i + 1) begin: hold_value_tag1
         for(j = 0; j < 4; j = j + 1) begin: hold_value_tag2
             assert_tag_hold_value: assert property(iff_instant(
+                                        clk, faux_rst, 
                                         $changed(tag_array[i][j]), 
                                         $past(i == latch_set_idx && j == latch_way_idx && state == REPLACE && mem_last, 1), 
                                         1
@@ -287,6 +320,7 @@ module cache_props(
     for(i = 0; i < 64; i = i + 1) begin: hold_value_valid1
         for(j = 0; j < 4; j = j + 1) begin: hold_value_valid2
             assert_valid_hold_value: assert property(iff_instant(
+                                        clk, faux_rst, 
                                         $changed(valid_bits[i][j]), 
                                         $past((i == latch_set_idx && j == latch_way_idx && state == REPLACE && mem_last) || !reset_n, 1), 
                                         1
@@ -298,11 +332,13 @@ module cache_props(
         for(j = 0; j < 4; j = j + 1) begin: hold_value_cache2
             for(k = 0; k < 128; k = k + 1) begin: hold_value_cache3
                 assert_cache_hold_value_hit: assert property(iff_instant(
+                    clk, faux_rst, 
                     $changed(cache[i][j][k]), 
                     $past(state == READY && req && !miss_now && i == latch_set_idx && j == latch_way_idx && ({(k >> 2), 2'b00} == latch_cpu_line_idx) && cpu_wstb[k % 4] == 1, 1), 
                     1
                 )); 
                 assert_cache_hold_value_miss: assert property(iff_instant(
+                    clk, faux_rst, 
                     $changed(cache[i][j][k]), 
                     $past(state == REPLACE && mem_data_valid && i == latch_set_idx && j == latch_way_idx && ({(k >> 2), 2'b00} == latch_mem_line_idx), 1), 
                     1
@@ -314,13 +350,13 @@ module cache_props(
     // -------------------- reset_condition -------------------- 
     for(i = 0; i < 64; i = i + 1) begin: reset_valid_bits_outer
         for(j = 0; j < 4; j = j + 1) begin: reset_ valid_bits_inner
-            assert_reset_valid_bits: assert property(reset_cond(!reset_n, valid_bits[i][j] == 1'b0)); 
+            assert_reset_valid_bits: assert property(reset_cond(clk, !reset_n, valid_bits[i][j] == 1'b0)); 
         end
     end 
 
     // -------------------- misc --------------------
-    p12: assert property(reset_cond(!reset_n, state == READY));
-    p13: assert property(reset_cond(!reset_n, miss == 1'b0));
+    p12: assert property(reset_cond(clk, !reset_n, state == READY));
+    p13: assert property(reset_cond(clk, !reset_n, miss == 1'b0));
 
     
     //////////////////////////////////////////////////////////

@@ -19,7 +19,7 @@ package propsPkg;
 			expression1 |-> ##1 expression2; 
 	endproperty 
 
-    property reset_cond(reset_cond, expression1); 
+    property reset_cond(clk, reset_cond, expression1); 
 		@(posedge clk) 
 			reset_cond |-> ##1 expression1; 
 	endproperty 
