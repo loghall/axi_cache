@@ -1,261 +1,321 @@
 
 `timescale 1 ns / 1 ps
 
-	module myip3_v1_0_S00_AXI #
+	module myip3_v1_0_s00_axi #
 	(
-		// Users to add parameters here
+		// users to add parameters here
 
-		// User parameters ends
-		// Do not modify the parameters beyond this line
+		// user parameters ends
+		// do not modify the parameters beyond this line
 
-		// Width of ID for for write address, write data, read address and read data
-		parameter integer C_S_AXI_ID_WIDTH	= 1,
-		// Width of S_AXI data bus
-		parameter integer C_S_AXI_DATA_WIDTH	= 32,
-		// Width of S_AXI address bus
-		parameter integer C_S_AXI_ADDR_WIDTH	= 6,
-		// Width of optional user defined signal in write address channel
-		parameter integer C_S_AXI_AWUSER_WIDTH	= 0,
-		// Width of optional user defined signal in read address channel
-		parameter integer C_S_AXI_ARUSER_WIDTH	= 0,
-		// Width of optional user defined signal in write data channel
-		parameter integer C_S_AXI_WUSER_WIDTH	= 0,
-		// Width of optional user defined signal in read data channel
-		parameter integer C_S_AXI_RUSER_WIDTH	= 0,
-		// Width of optional user defined signal in write response channel
-		parameter integer C_S_AXI_BUSER_WIDTH	= 0
+		// width of id for for write address, write data, read address and read data
+		parameter integer c_s_axi_id_width	= 1,
+
+		// width of s_axi data bus
+		parameter integer c_s_axi_data_width	= 32,
+
+		// width of s_axi address bus
+		parameter integer c_s_axi_addr_width	= 6,
+
+		// width of optional user defined signal in write address channel
+		parameter integer c_s_axi_awuser_width	= 0,
+
+		// width of optional user defined signal in read address channel
+		parameter integer c_s_axi_aruser_width	= 0,
+
+		// width of optional user defined signal in write data channel
+		parameter integer c_s_axi_wuser_width	= 0,
+
+		// width of optional user defined signal in read data channel
+		parameter integer c_s_axi_ruser_width	= 0,
+
+		// width of optional user defined signal in write response channel
+		parameter integer c_s_axi_buser_width	= 0
 	)
 	(
-		// Users to add ports here
+		// users to add ports here
 
-		// User ports ends
-		// Do not modify the ports beyond this line
+		// user ports ends
+		// do not modify the ports beyond this line
 
-		// Global Clock Signal
-		input wire  S_AXI_ACLK,
-		// Global Reset Signal. This Signal is Active LOW
-		input wire  S_AXI_ARESETN,
-		// Write Address ID
-		input wire [C_S_AXI_ID_WIDTH-1 : 0] S_AXI_AWID,
-		// Write address
-		input wire [C_S_AXI_ADDR_WIDTH-1 : 0] S_AXI_AWADDR,
-		// Burst length. The burst length gives the exact number of transfers in a burst
-		input wire [7 : 0] S_AXI_AWLEN,
-		// Burst size. This signal indicates the size of each transfer in the burst
-		input wire [2 : 0] S_AXI_AWSIZE,
-		// Burst type. The burst type and the size information, 
+		// global clock signal
+		input wire  s_axi_aclk,
+
+		// global reset signal. this signal is active low
+		input wire  s_axi_aresetn,
+
+		// write address id
+		input wire [c_s_axi_id_width-1 : 0] s_axi_awid,
+
+		// write address
+		input wire [c_s_axi_addr_width-1 : 0] s_axi_awaddr,
+
+		// burst length. the burst length gives the exact number of transfers in a burst
+		input wire [7 : 0] s_axi_awlen,
+
+		// burst size. this signal indicates the size of each transfer in the burst
+		input wire [2 : 0] s_axi_awsize,
+
+		// burst type. the burst type and the size information, 
     // determine how the address for each transfer within the burst is calculated.
-		input wire [1 : 0] S_AXI_AWBURST,
-		// Lock type. Provides additional information about the
+		input wire [1 : 0] s_axi_awburst,
+
+		// lock type. provides additional information about the
     // atomic characteristics of the transfer.
-		input wire  S_AXI_AWLOCK,
-		// Memory type. This signal indicates how transactions
+		input wire  s_axi_awlock,
+
+		// memory type. this signal indicates how transactions
     // are required to progress through a system.
-		input wire [3 : 0] S_AXI_AWCACHE,
-		// Protection type. This signal indicates the privilege
+		input wire [3 : 0] s_axi_awcache,
+
+		// protection type. this signal indicates the privilege
     // and security level of the transaction, and whether
     // the transaction is a data access or an instruction access.
-		input wire [2 : 0] S_AXI_AWPROT,
-		// Quality of Service, QoS identifier sent for each
+		input wire [2 : 0] s_axi_awprot,
+
+		// quality of service, qos identifier sent for each
     // write transaction.
-		input wire [3 : 0] S_AXI_AWQOS,
-		// Region identifier. Permits a single physical interface
+		input wire [3 : 0] s_axi_awqos,
+
+		// region identifier. permits a single physical interface
     // on a slave to be used for multiple logical interfaces.
-		input wire [3 : 0] S_AXI_AWREGION,
-		// Optional User-defined signal in the write address channel.
-		input wire [C_S_AXI_AWUSER_WIDTH-1 : 0] S_AXI_AWUSER,
-		// Write address valid. This signal indicates that
+		input wire [3 : 0] s_axi_awregion,
+
+		// optional user-defined signal in the write address channel.
+		input wire [c_s_axi_awuser_width-1 : 0] s_axi_awuser,
+
+		// write address valid. this signal indicates that
     // the channel is signaling valid write address and
     // control information.
-		input wire  S_AXI_AWVALID,
-		// Write address ready. This signal indicates that
+		input wire  s_axi_awvalid,
+
+		// write address ready. this signal indicates that
     // the slave is ready to accept an address and associated
     // control signals.
-		output wire  S_AXI_AWREADY,
-		// Write Data
-		input wire [C_S_AXI_DATA_WIDTH-1 : 0] S_AXI_WDATA,
-		// Write strobes. This signal indicates which byte
-    // lanes hold valid data. There is one write strobe
+		output wire  s_axi_awready,
+
+		// write data
+		input wire [c_s_axi_data_width-1 : 0] s_axi_wdata,
+
+		// write strobes. this signal indicates which byte
+    // lanes hold valid data. there is one write strobe
     // bit for each eight bits of the write data bus.
-		input wire [(C_S_AXI_DATA_WIDTH/8)-1 : 0] S_AXI_WSTRB,
-		// Write last. This signal indicates the last transfer
+		input wire [(c_s_axi_data_width/8)-1 : 0] s_axi_wstrb,
+
+		// write last. this signal indicates the last transfer
     // in a write burst.
-		input wire  S_AXI_WLAST,
-		// Optional User-defined signal in the write data channel.
-		input wire [C_S_AXI_WUSER_WIDTH-1 : 0] S_AXI_WUSER,
-		// Write valid. This signal indicates that valid write
+		input wire  s_axi_wlast,
+
+		// optional user-defined signal in the write data channel.
+		input wire [c_s_axi_wuser_width-1 : 0] s_axi_wuser,
+
+		// write valid. this signal indicates that valid write
     // data and strobes are available.
-		input wire  S_AXI_WVALID,
-		// Write ready. This signal indicates that the slave
+		input wire  s_axi_wvalid,
+
+		// write ready. this signal indicates that the slave
     // can accept the write data.
-		output wire  S_AXI_WREADY,
-		// Response ID tag. This signal is the ID tag of the
+		output wire  s_axi_wready,
+
+		// response id tag. this signal is the id tag of the
     // write response.
-		output wire [C_S_AXI_ID_WIDTH-1 : 0] S_AXI_BID,
-		// Write response. This signal indicates the status
+		output wire [c_s_axi_id_width-1 : 0] s_axi_bid,
+
+		// write response. this signal indicates the status
     // of the write transaction.
-		output wire [1 : 0] S_AXI_BRESP,
-		// Optional User-defined signal in the write response channel.
-		output wire [C_S_AXI_BUSER_WIDTH-1 : 0] S_AXI_BUSER,
-		// Write response valid. This signal indicates that the
+		output wire [1 : 0] s_axi_bresp,
+
+		// optional user-defined signal in the write response channel.
+		output wire [c_s_axi_buser_width-1 : 0] s_axi_buser,
+
+		// write response valid. this signal indicates that the
     // channel is signaling a valid write response.
-		output wire  S_AXI_BVALID,
-		// Response ready. This signal indicates that the master
+		output wire  s_axi_bvalid,
+
+		// response ready. this signal indicates that the master
     // can accept a write response.
-		input wire  S_AXI_BREADY,
-		// Read address ID. This signal is the identification
+		input wire  s_axi_bready,
+
+		// read address id. this signal is the identification
     // tag for the read address group of signals.
-		input wire [C_S_AXI_ID_WIDTH-1 : 0] S_AXI_ARID,
-		// Read address. This signal indicates the initial
+		input wire [c_s_axi_id_width-1 : 0] s_axi_arid,
+
+		// read address. this signal indicates the initial
     // address of a read burst transaction.
-		input wire [C_S_AXI_ADDR_WIDTH-1 : 0] S_AXI_ARADDR,
-		// Burst length. The burst length gives the exact number of transfers in a burst
-		input wire [7 : 0] S_AXI_ARLEN,
-		// Burst size. This signal indicates the size of each transfer in the burst
-		input wire [2 : 0] S_AXI_ARSIZE,
-		// Burst type. The burst type and the size information, 
+		input wire [c_s_axi_addr_width-1 : 0] s_axi_araddr,
+
+		// burst length. the burst length gives the exact number of transfers in a burst
+		input wire [7 : 0] s_axi_arlen,
+
+		// burst size. this signal indicates the size of each transfer in the burst
+		input wire [2 : 0] s_axi_arsize,
+
+		// burst type. the burst type and the size information, 
     // determine how the address for each transfer within the burst is calculated.
-		input wire [1 : 0] S_AXI_ARBURST,
-		// Lock type. Provides additional information about the
+		input wire [1 : 0] s_axi_arburst,
+
+		// lock type. provides additional information about the
     // atomic characteristics of the transfer.
-		input wire  S_AXI_ARLOCK,
-		// Memory type. This signal indicates how transactions
+		input wire  s_axi_arlock,
+
+		// memory type. this signal indicates how transactions
     // are required to progress through a system.
-		input wire [3 : 0] S_AXI_ARCACHE,
-		// Protection type. This signal indicates the privilege
+		input wire [3 : 0] s_axi_arcache,
+
+		// protection type. this signal indicates the privilege
     // and security level of the transaction, and whether
     // the transaction is a data access or an instruction access.
-		input wire [2 : 0] S_AXI_ARPROT,
-		// Quality of Service, QoS identifier sent for each
+		input wire [2 : 0] s_axi_arprot,
+
+		// quality of service, qos identifier sent for each
     // read transaction.
-		input wire [3 : 0] S_AXI_ARQOS,
-		// Region identifier. Permits a single physical interface
+		input wire [3 : 0] s_axi_arqos,
+
+		// region identifier. permits a single physical interface
     // on a slave to be used for multiple logical interfaces.
-		input wire [3 : 0] S_AXI_ARREGION,
-		// Optional User-defined signal in the read address channel.
-		input wire [C_S_AXI_ARUSER_WIDTH-1 : 0] S_AXI_ARUSER,
-		// Write address valid. This signal indicates that
+		input wire [3 : 0] s_axi_arregion,
+
+		// optional user-defined signal in the read address channel.
+		input wire [c_s_axi_aruser_width-1 : 0] s_axi_aruser,
+
+		// write address valid. this signal indicates that
     // the channel is signaling valid read address and
     // control information.
-		input wire  S_AXI_ARVALID,
-		// Read address ready. This signal indicates that
+		input wire  s_axi_arvalid,
+
+		// read address ready. this signal indicates that
     // the slave is ready to accept an address and associated
     // control signals.
-		output wire  S_AXI_ARREADY,
-		// Read ID tag. This signal is the identification tag
+		output wire  s_axi_arready,
+
+		// read id tag. this signal is the identification tag
     // for the read data group of signals generated by the slave.
-		output wire [C_S_AXI_ID_WIDTH-1 : 0] S_AXI_RID,
-		// Read Data
-		output wire [C_S_AXI_DATA_WIDTH-1 : 0] S_AXI_RDATA,
-		// Read response. This signal indicates the status of
+		output wire [c_s_axi_id_width-1 : 0] s_axi_rid,
+
+		// read data
+		output wire [c_s_axi_data_width-1 : 0] s_axi_rdata,
+
+		// read response. this signal indicates the status of
     // the read transfer.
-		output wire [1 : 0] S_AXI_RRESP,
-		// Read last. This signal indicates the last transfer
+		output wire [1 : 0] s_axi_rresp,
+
+		// read last. this signal indicates the last transfer
     // in a read burst.
-		output wire  S_AXI_RLAST,
-		// Optional User-defined signal in the read address channel.
-		output wire [C_S_AXI_RUSER_WIDTH-1 : 0] S_AXI_RUSER,
-		// Read valid. This signal indicates that the channel
+		output wire  s_axi_rlast,
+
+		// optional user-defined signal in the read address channel.
+		output wire [c_s_axi_ruser_width-1 : 0] s_axi_ruser,
+
+		// read valid. this signal indicates that the channel
     // is signaling the required read data.
-		output wire  S_AXI_RVALID,
-		// Read ready. This signal indicates that the master can
+		output wire  s_axi_rvalid,
+
+		// read ready. this signal indicates that the master can
     // accept the read data and response information.
-		input wire  S_AXI_RREADY
+		input wire  s_axi_rready
 	);
 
-	// AXI4FULL signals
-	reg [C_S_AXI_ADDR_WIDTH-1 : 0] 	axi_awaddr;
+	// axi4full signals
+	reg [c_s_axi_addr_width-1 : 0] 	axi_awaddr;
 	reg  	axi_awready;
 	reg  	axi_wready;
 	reg [1 : 0] 	axi_bresp;
-	reg [C_S_AXI_BUSER_WIDTH-1 : 0] 	axi_buser;
+	reg [c_s_axi_buser_width-1 : 0] 	axi_buser;
 	reg  	axi_bvalid;
-	reg [C_S_AXI_ADDR_WIDTH-1 : 0] 	axi_araddr;
+	reg [c_s_axi_addr_width-1 : 0] 	axi_araddr;
 	reg  	axi_arready;
-	reg [C_S_AXI_DATA_WIDTH-1 : 0] 	axi_rdata;
+	reg [c_s_axi_data_width-1 : 0] 	axi_rdata;
 	reg [1 : 0] 	axi_rresp;
 	reg  	axi_rlast;
-	reg [C_S_AXI_RUSER_WIDTH-1 : 0] 	axi_ruser;
+	reg [c_s_axi_ruser_width-1 : 0] 	axi_ruser;
 	reg  	axi_rvalid;
+
 	// aw_wrap_en determines wrap boundary and enables wrapping
 	wire aw_wrap_en;
+
 	// ar_wrap_en determines wrap boundary and enables wrapping
 	wire ar_wrap_en;
+
 	// aw_wrap_size is the size of the write transfer, the
 	// write address wraps to a lower address if upper address
 	// limit is reached
 	wire [31:0]  aw_wrap_size ; 
+
 	// ar_wrap_size is the size of the read transfer, the
 	// read address wraps to a lower address if upper address
 	// limit is reached
 	wire [31:0]  ar_wrap_size ; 
-	// The axi_awv_awr_flag flag marks the presence of write address valid
+
+	// the axi_awv_awr_flag flag marks the presence of write address valid
 	reg axi_awv_awr_flag;
-	//The axi_arv_arr_flag flag marks the presence of read address valid
+
+	//the axi_arv_arr_flag flag marks the presence of read address valid
 	reg axi_arv_arr_flag; 
-	// The axi_awlen_cntr internal write address counter to keep track of beats in a burst transaction
+
+	// the axi_awlen_cntr internal write address counter to keep track of beats in a burst transaction
 	reg [7:0] axi_awlen_cntr;
-	//The axi_arlen_cntr internal read address counter to keep track of beats in a burst transaction
+	
+	//the axi_arlen_cntr internal read address counter to keep track of beats in a burst transaction
 	reg [7:0] axi_arlen_cntr;
 	reg [1:0] axi_arburst;
 	reg [1:0] axi_awburst;
 	reg [7:0] axi_arlen;
 	reg [7:0] axi_awlen;
-	//local parameter for addressing 32 bit / 64 bit C_S_AXI_DATA_WIDTH
-	//ADDR_LSB is used for addressing 32/64 bit registers/memories
-	//ADDR_LSB = 2 for 32 bits (n downto 2) 
-	//ADDR_LSB = 3 for 42 bits (n downto 3)
+	//local parameter for addressing 32 bit / 64 bit c_s_axi_data_width
+	//addr_lsb is used for addressing 32/64 bit registers/memories
+	//addr_lsb = 2 for 32 bits (n downto 2) 
+	//addr_lsb = 3 for 42 bits (n downto 3)
 
-	localparam integer ADDR_LSB = (C_S_AXI_DATA_WIDTH/32)+ 1;
-	localparam integer OPT_MEM_ADDR_BITS = 3;
-	localparam integer USER_NUM_MEM = 1;
+	localparam integer addr_lsb = (c_s_axi_data_width/32)+ 1;
+	localparam integer opt_mem_addr_bits = 3;
+	localparam integer user_num_mem = 1;
 	//----------------------------------------------
-	//-- Signals for user logic memory space example
+	//-- signals for user logic memory space example
 	//------------------------------------------------
-	wire [OPT_MEM_ADDR_BITS:0] mem_address;
-	wire [USER_NUM_MEM-1:0] mem_select;
-	reg [C_S_AXI_DATA_WIDTH-1:0] mem_data_out[0 : USER_NUM_MEM-1];
+	wire [opt_mem_addr_bits:0] mem_address;
+	wire [user_num_mem-1:0] mem_select;
+	reg [c_s_axi_data_width-1:0] mem_data_out[0 : user_num_mem-1];
 
 	genvar i;
 	genvar j;
 	genvar mem_byte_index;
 
-	// I/O Connections assignments
+	// i/o connections assignments
 
-	assign S_AXI_AWREADY	= axi_awready;
-	assign S_AXI_WREADY	= axi_wready;
-	assign S_AXI_BRESP	= axi_bresp;
-	assign S_AXI_BUSER	= axi_buser;
-	assign S_AXI_BVALID	= axi_bvalid;
-	assign S_AXI_ARREADY	= axi_arready;
-	assign S_AXI_RDATA	= axi_rdata;
-	assign S_AXI_RRESP	= axi_rresp;
-	assign S_AXI_RLAST	= axi_rlast;
-	assign S_AXI_RUSER	= axi_ruser;
-	assign S_AXI_RVALID	= axi_rvalid;
-	assign S_AXI_BID = S_AXI_AWID;
-	assign S_AXI_RID = S_AXI_ARID;
-	assign  aw_wrap_size = (C_S_AXI_DATA_WIDTH/8 * (axi_awlen)); 
-	assign  ar_wrap_size = (C_S_AXI_DATA_WIDTH/8 * (axi_arlen)); 
+	assign s_axi_awready	= axi_awready;
+	assign s_axi_wready	= axi_wready;
+	assign s_axi_bresp	= axi_bresp;
+	assign s_axi_buser	= axi_buser;
+	assign s_axi_bvalid	= axi_bvalid;
+	assign s_axi_arready	= axi_arready;
+	assign s_axi_rdata	= axi_rdata;
+	assign s_axi_rresp	= axi_rresp;
+	assign s_axi_rlast	= axi_rlast;
+	assign s_axi_ruser	= axi_ruser;
+	assign s_axi_rvalid	= axi_rvalid;
+	assign s_axi_bid = s_axi_awid;
+	assign s_axi_rid = s_axi_arid;
+	assign  aw_wrap_size = (c_s_axi_data_width/8 * (axi_awlen)); 
+	assign  ar_wrap_size = (c_s_axi_data_width/8 * (axi_arlen)); 
 	assign  aw_wrap_en = ((axi_awaddr & aw_wrap_size) == aw_wrap_size)? 1'b1: 1'b0;
 	assign  ar_wrap_en = ((axi_araddr & ar_wrap_size) == ar_wrap_size)? 1'b1: 1'b0;
 
-	// Implement axi_awready generation
+	// implement axi_awready generation
 
-	// axi_awready is asserted for one S_AXI_ACLK clock cycle when both
-	// S_AXI_AWVALID and S_AXI_WVALID are asserted. axi_awready is
+	// axi_awready is asserted for one s_axi_aclk clock cycle when both
+	// s_axi_awvalid and s_axi_wvalid are asserted. axi_awready is
 	// de-asserted when reset is low.
 
-	always @( posedge S_AXI_ACLK )
+	always @( posedge s_axi_aclk )
 	begin
-	  if ( S_AXI_ARESETN == 1'b0 )
+	  if ( s_axi_aresetn == 1'b0 )
 	    begin
 	      axi_awready <= 1'b0;
 	      axi_awv_awr_flag <= 1'b0;
 	    end 
 	  else
 	    begin    
-	      if (~axi_awready && S_AXI_AWVALID && ~axi_awv_awr_flag && ~axi_arv_arr_flag)
+	      if (~axi_awready && s_axi_awvalid && ~axi_awv_awr_flag && ~axi_arv_arr_flag)
 	        begin
 	          // slave is ready to accept an address and
 	          // associated control signals
@@ -263,7 +323,7 @@
 	          axi_awv_awr_flag  <= 1'b1; 
 	          // used for generation of bresp() and bvalid
 	        end
-	      else if (S_AXI_WLAST && axi_wready)          
+	      else if (s_axi_wlast && axi_wready)          
 	      // preparing to accept next address after current write burst tx completion
 	        begin
 	          axi_awv_awr_flag  <= 1'b0;
@@ -274,14 +334,14 @@
 	        end
 	    end 
 	end       
-	// Implement axi_awaddr latching
+	// implement axi_awaddr latching
 
-	// This process is used to latch the address when both 
-	// S_AXI_AWVALID and S_AXI_WVALID are valid. 
+	// this process is used to latch the address when both 
+	// s_axi_awvalid and s_axi_wvalid are valid. 
 
-	always @( posedge S_AXI_ACLK )
+	always @( posedge s_axi_aclk )
 	begin
-	  if ( S_AXI_ARESETN == 1'b0 )
+	  if ( s_axi_aresetn == 1'b0 )
 	    begin
 	      axi_awaddr <= 0;
 	      axi_awlen_cntr <= 0;
@@ -290,91 +350,91 @@
 	    end 
 	  else
 	    begin    
-	      if (~axi_awready && S_AXI_AWVALID && ~axi_awv_awr_flag)
+	      if (~axi_awready && s_axi_awvalid && ~axi_awv_awr_flag)
 	        begin
 	          // address latching 
-	          axi_awaddr <= S_AXI_AWADDR[C_S_AXI_ADDR_WIDTH - 1:0];  
-	           axi_awburst <= S_AXI_AWBURST; 
-	           axi_awlen <= S_AXI_AWLEN;     
+	          axi_awaddr <= s_axi_awaddr[c_s_axi_addr_width - 1:0];  
+	           axi_awburst <= s_axi_awburst; 
+	           axi_awlen <= s_axi_awlen;     
 	          // start address of transfer
 	          axi_awlen_cntr <= 0;
 	        end   
-	      else if((axi_awlen_cntr <= axi_awlen) && axi_wready && S_AXI_WVALID)        
+	      else if((axi_awlen_cntr <= axi_awlen) && axi_wready && s_axi_wvalid)        
 	        begin
 
 	          axi_awlen_cntr <= axi_awlen_cntr + 1;
 
 	          case (axi_awburst)
 	            2'b00: // fixed burst
-	            // The write address for all the beats in the transaction are fixed
+	            // the write address for all the beats in the transaction are fixed
 	              begin
 	                axi_awaddr <= axi_awaddr;          
 	                //for awsize = 4 bytes (010)
 	              end   
 	            2'b01: //incremental burst
-	            // The write address for all the beats in the transaction are increments by awsize
+	            // the write address for all the beats in the transaction are increments by awsize
 	              begin
-	                axi_awaddr[C_S_AXI_ADDR_WIDTH - 1:ADDR_LSB] <= axi_awaddr[C_S_AXI_ADDR_WIDTH - 1:ADDR_LSB] + 1;
+	                axi_awaddr[c_s_axi_addr_width - 1:addr_lsb] <= axi_awaddr[c_s_axi_addr_width - 1:addr_lsb] + 1;
 	                //awaddr aligned to 4 byte boundary
-	                axi_awaddr[ADDR_LSB-1:0]  <= {ADDR_LSB{1'b0}};   
+	                axi_awaddr[addr_lsb-1:0]  <= {addr_lsb{1'b0}};   
 	                //for awsize = 4 bytes (010)
 	              end   
-	            2'b10: //Wrapping burst
-	            // The write address wraps when the address reaches wrap boundary 
+	            2'b10: //wrapping burst
+	            // the write address wraps when the address reaches wrap boundary 
 	              if (aw_wrap_en)
 	                begin
 	                  axi_awaddr <= (axi_awaddr - aw_wrap_size); 
 	                end
 	              else 
 	                begin
-	                  axi_awaddr[C_S_AXI_ADDR_WIDTH - 1:ADDR_LSB] <= axi_awaddr[C_S_AXI_ADDR_WIDTH - 1:ADDR_LSB] + 1;
-	                  axi_awaddr[ADDR_LSB-1:0]  <= {ADDR_LSB{1'b0}}; 
+	                  axi_awaddr[c_s_axi_addr_width - 1:addr_lsb] <= axi_awaddr[c_s_axi_addr_width - 1:addr_lsb] + 1;
+	                  axi_awaddr[addr_lsb-1:0]  <= {addr_lsb{1'b0}}; 
 	                end                      
 	            default: //reserved (incremental burst for example)
 	              begin
-	                axi_awaddr <= axi_awaddr[C_S_AXI_ADDR_WIDTH - 1:ADDR_LSB] + 1;
+	                axi_awaddr <= axi_awaddr[c_s_axi_addr_width - 1:addr_lsb] + 1;
 	                //for awsize = 4 bytes (010)
 	              end
 	          endcase              
 	        end
 	    end 
 	end       
-	// Implement axi_wready generation
+	// implement axi_wready generation
 
-	// axi_wready is asserted for one S_AXI_ACLK clock cycle when both
-	// S_AXI_AWVALID and S_AXI_WVALID are asserted. axi_wready is 
+	// axi_wready is asserted for one s_axi_aclk clock cycle when both
+	// s_axi_awvalid and s_axi_wvalid are asserted. axi_wready is 
 	// de-asserted when reset is low. 
 
-	always @( posedge S_AXI_ACLK )
+	always @( posedge s_axi_aclk )
 	begin
-	  if ( S_AXI_ARESETN == 1'b0 )
+	  if ( s_axi_aresetn == 1'b0 )
 	    begin
 	      axi_wready <= 1'b0;
 	    end 
 	  else
 	    begin    
-	      if ( ~axi_wready && S_AXI_WVALID && axi_awv_awr_flag)
+	      if ( ~axi_wready && s_axi_wvalid && axi_awv_awr_flag)
 	        begin
 	          // slave can accept the write data
 	          axi_wready <= 1'b1;
 	        end
 	      //else if (~axi_awv_awr_flag)
-	      else if (S_AXI_WLAST && axi_wready)
+	      else if (s_axi_wlast && axi_wready)
 	        begin
 	          axi_wready <= 1'b0;
 	        end
 	    end 
 	end       
-	// Implement write response logic generation
+	// implement write response logic generation
 
-	// The write response and response valid signals are asserted by the slave 
-	// when axi_wready, S_AXI_WVALID, axi_wready and S_AXI_WVALID are asserted.  
-	// This marks the acceptance of address and indicates the status of 
+	// the write response and response valid signals are asserted by the slave 
+	// when axi_wready, s_axi_wvalid, axi_wready and s_axi_wvalid are asserted.  
+	// this marks the acceptance of address and indicates the status of 
 	// write transaction.
 
-	always @( posedge S_AXI_ACLK )
+	always @( posedge s_axi_aclk )
 	begin
-	  if ( S_AXI_ARESETN == 1'b0 )
+	  if ( s_axi_aresetn == 1'b0 )
 	    begin
 	      axi_bvalid <= 0;
 	      axi_bresp <= 2'b0;
@@ -382,15 +442,15 @@
 	    end 
 	  else
 	    begin    
-	      if (axi_awv_awr_flag && axi_wready && S_AXI_WVALID && ~axi_bvalid && S_AXI_WLAST )
+	      if (axi_awv_awr_flag && axi_wready && s_axi_wvalid && ~axi_bvalid && s_axi_wlast )
 	        begin
 	          axi_bvalid <= 1'b1;
 	          axi_bresp  <= 2'b0; 
-	          // 'OKAY' response 
+	          // 'okay' response 
 	        end                   
 	      else
 	        begin
-	          if (S_AXI_BREADY && axi_bvalid) 
+	          if (s_axi_bready && axi_bvalid) 
 	          //check if bready is asserted while bvalid is high) 
 	          //(there is a possibility that bready is always asserted high)   
 	            begin
@@ -399,29 +459,29 @@
 	        end
 	    end
 	 end   
-	// Implement axi_arready generation
+	// implement axi_arready generation
 
-	// axi_arready is asserted for one S_AXI_ACLK clock cycle when
-	// S_AXI_ARVALID is asserted. axi_awready is 
+	// axi_arready is asserted for one s_axi_aclk clock cycle when
+	// s_axi_arvalid is asserted. axi_awready is 
 	// de-asserted when reset (active low) is asserted. 
-	// The read address is also latched when S_AXI_ARVALID is 
+	// the read address is also latched when s_axi_arvalid is 
 	// asserted. axi_araddr is reset to zero on reset assertion.
 
-	always @( posedge S_AXI_ACLK )
+	always @( posedge s_axi_aclk )
 	begin
-	  if ( S_AXI_ARESETN == 1'b0 )
+	  if ( s_axi_aresetn == 1'b0 )
 	    begin
 	      axi_arready <= 1'b0;
 	      axi_arv_arr_flag <= 1'b0;
 	    end 
 	  else
 	    begin    
-	      if (~axi_arready && S_AXI_ARVALID && ~axi_awv_awr_flag && ~axi_arv_arr_flag)
+	      if (~axi_arready && s_axi_arvalid && ~axi_awv_awr_flag && ~axi_arv_arr_flag)
 	        begin
 	          axi_arready <= 1'b1;
 	          axi_arv_arr_flag <= 1'b1;
 	        end
-	      else if (axi_rvalid && S_AXI_RREADY && axi_arlen_cntr == axi_arlen)
+	      else if (axi_rvalid && s_axi_rready && axi_arlen_cntr == axi_arlen)
 	      // preparing to accept next address after current read completion
 	        begin
 	          axi_arv_arr_flag  <= 1'b0;
@@ -432,13 +492,13 @@
 	        end
 	    end 
 	end       
-	// Implement axi_araddr latching
+	// implement axi_araddr latching
 
-	//This process is used to latch the address when both 
-	//S_AXI_ARVALID and S_AXI_RVALID are valid. 
-	always @( posedge S_AXI_ACLK )
+	//this process is used to latch the address when both 
+	//s_axi_arvalid and s_axi_rvalid are valid. 
+	always @( posedge s_axi_aclk )
 	begin
-	  if ( S_AXI_ARESETN == 1'b0 )
+	  if ( s_axi_aresetn == 1'b0 )
 	    begin
 	      axi_araddr <= 0;
 	      axi_arlen_cntr <= 0;
@@ -449,17 +509,17 @@
 	    end 
 	  else
 	    begin    
-	      if (~axi_arready && S_AXI_ARVALID && ~axi_arv_arr_flag)
+	      if (~axi_arready && s_axi_arvalid && ~axi_arv_arr_flag)
 	        begin
 	          // address latching 
-	          axi_araddr <= S_AXI_ARADDR[C_S_AXI_ADDR_WIDTH - 1:0]; 
-	          axi_arburst <= S_AXI_ARBURST; 
-	          axi_arlen <= S_AXI_ARLEN;     
+	          axi_araddr <= s_axi_araddr[c_s_axi_addr_width - 1:0]; 
+	          axi_arburst <= s_axi_arburst; 
+	          axi_arlen <= s_axi_arlen;     
 	          // start address of transfer
 	          axi_arlen_cntr <= 0;
 	          axi_rlast <= 1'b0;
 	        end   
-	      else if((axi_arlen_cntr <= axi_arlen) && axi_rvalid && S_AXI_RREADY)        
+	      else if((axi_arlen_cntr <= axi_arlen) && axi_rvalid && s_axi_rready)        
 	        begin
 	         
 	          axi_arlen_cntr <= axi_arlen_cntr + 1;
@@ -467,34 +527,34 @@
 	        
 	          case (axi_arburst)
 	            2'b00: // fixed burst
-	             // The read address for all the beats in the transaction are fixed
+	             // the read address for all the beats in the transaction are fixed
 	              begin
 	                axi_araddr       <= axi_araddr;        
 	                //for arsize = 4 bytes (010)
 	              end   
 	            2'b01: //incremental burst
-	            // The read address for all the beats in the transaction are increments by awsize
+	            // the read address for all the beats in the transaction are increments by awsize
 	              begin
-	                axi_araddr[C_S_AXI_ADDR_WIDTH - 1:ADDR_LSB] <= axi_araddr[C_S_AXI_ADDR_WIDTH - 1:ADDR_LSB] + 1; 
+	                axi_araddr[c_s_axi_addr_width - 1:addr_lsb] <= axi_araddr[c_s_axi_addr_width - 1:addr_lsb] + 1; 
 	                //araddr aligned to 4 byte boundary
-	                axi_araddr[ADDR_LSB-1:0]  <= {ADDR_LSB{1'b0}};   
+	                axi_araddr[addr_lsb-1:0]  <= {addr_lsb{1'b0}};   
 	                //for awsize = 4 bytes (010)
 	              end   
-	            2'b10: //Wrapping burst
-	            // The read address wraps when the address reaches wrap boundary 
+	            2'b10: //wrapping burst
+	            // the read address wraps when the address reaches wrap boundary 
 	              if (ar_wrap_en) 
 	                begin
 	                  axi_araddr <= (axi_araddr - ar_wrap_size); 
 	                end
 	              else 
 	                begin
-	                axi_araddr[C_S_AXI_ADDR_WIDTH - 1:ADDR_LSB] <= axi_araddr[C_S_AXI_ADDR_WIDTH - 1:ADDR_LSB] + 1; 
+	                axi_araddr[c_s_axi_addr_width - 1:addr_lsb] <= axi_araddr[c_s_axi_addr_width - 1:addr_lsb] + 1; 
 	                //araddr aligned to 4 byte boundary
-	                axi_araddr[ADDR_LSB-1:0]  <= {ADDR_LSB{1'b0}};   
+	                axi_araddr[addr_lsb-1:0]  <= {addr_lsb{1'b0}};   
 	                end                      
 	            default: //reserved (incremental burst for example)
 	              begin
-	                axi_araddr <= axi_araddr[C_S_AXI_ADDR_WIDTH - 1:ADDR_LSB]+1;
+	                axi_araddr <= axi_araddr[c_s_axi_addr_width - 1:addr_lsb]+1;
 	                //for arsize = 4 bytes (010)
 	              end
 	          endcase              
@@ -503,25 +563,25 @@
 	        begin
 	          axi_rlast <= 1'b1;
 	        end          
-	      else if (S_AXI_RREADY)   
+	      else if (s_axi_rready)   
 	        begin
 	          axi_rlast <= 1'b0;
 	        end          
 	    end 
 	end       
-	// Implement axi_arvalid generation
+	// implement axi_arvalid generation
 
-	// axi_rvalid is asserted for one S_AXI_ACLK clock cycle when both 
-	// S_AXI_ARVALID and axi_arready are asserted. The slave registers 
-	// data are available on the axi_rdata bus at this instance. The 
+	// axi_rvalid is asserted for one s_axi_aclk clock cycle when both 
+	// s_axi_arvalid and axi_arready are asserted. the slave registers 
+	// data are available on the axi_rdata bus at this instance. the 
 	// assertion of axi_rvalid marks the validity of read data on the 
 	// bus and axi_rresp indicates the status of read transaction.axi_rvalid 
 	// is deasserted on reset (active low). axi_rresp and axi_rdata are 
 	// cleared to zero on reset (active low).  
 
-	always @( posedge S_AXI_ACLK )
+	always @( posedge s_axi_aclk )
 	begin
-	  if ( S_AXI_ARESETN == 1'b0 )
+	  if ( s_axi_aresetn == 1'b0 )
 	    begin
 	      axi_rvalid <= 0;
 	      axi_rresp  <= 0;
@@ -532,57 +592,57 @@
 	        begin
 	          axi_rvalid <= 1'b1;
 	          axi_rresp  <= 2'b0; 
-	          // 'OKAY' response
+	          // 'okay' response
 	        end   
-	      else if (axi_rvalid && S_AXI_RREADY)
+	      else if (axi_rvalid && s_axi_rready)
 	        begin
 	          axi_rvalid <= 1'b0;
 	        end            
 	    end
 	end    
 	// ------------------------------------------
-	// -- Example code to access user logic memory region
+	// -- example code to access user logic memory region
 	// ------------------------------------------
 
 	generate
-	  if (USER_NUM_MEM >= 1)
+	  if (user_num_mem >= 1)
 	    begin
 	      assign mem_select  = 1;
-	      assign mem_address = (axi_arv_arr_flag? axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB]:(axi_awv_awr_flag? axi_awaddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB]:0));
+	      assign mem_address = (axi_arv_arr_flag? axi_araddr[addr_lsb+opt_mem_addr_bits:addr_lsb]:(axi_awv_awr_flag? axi_awaddr[addr_lsb+opt_mem_addr_bits:addr_lsb]:0));
 	    end
 	endgenerate
 	     
-	// implement Block RAM(s)
+	// implement block ram(s)
 	generate 
-	  for(i=0; i<= USER_NUM_MEM-1; i=i+1)
-	    begin:BRAM_GEN
+	  for(i=0; i<= user_num_mem-1; i=i+1)
+	    begin:bram_gen
 	      wire mem_rden;
 	      wire mem_wren;
 	
-	      assign mem_wren = axi_wready && S_AXI_WVALID ;
+	      assign mem_wren = axi_wready && s_axi_wvalid ;
 	
 	      assign mem_rden = axi_arv_arr_flag ; //& ~axi_rvalid
 	     
-	      for(mem_byte_index=0; mem_byte_index<= (C_S_AXI_DATA_WIDTH/8-1); mem_byte_index=mem_byte_index+1)
-	      begin:BYTE_BRAM_GEN
+	      for(mem_byte_index=0; mem_byte_index<= (c_s_axi_data_width/8-1); mem_byte_index=mem_byte_index+1)
+	      begin:byte_bram_gen
 	        wire [8-1:0] data_in ;
 	        wire [8-1:0] data_out;
 	        reg  [8-1:0] byte_ram [0 : 15];
 	        integer  j;
 	     
 	        //assigning 8 bit data
-	        assign data_in  = S_AXI_WDATA[(mem_byte_index*8+7) -: 8];
+	        assign data_in  = s_axi_wdata[(mem_byte_index*8+7) -: 8];
 	        assign data_out = byte_ram[mem_address];
 	     
-	        always @( posedge S_AXI_ACLK )
+	        always @( posedge s_axi_aclk )
 	        begin
-	          if (mem_wren && S_AXI_WSTRB[mem_byte_index])
+	          if (mem_wren && s_axi_wstrb[mem_byte_index])
 	            begin
 	              byte_ram[mem_address] <= data_in;
 	            end   
 	        end    
 	      
-	        always @( posedge S_AXI_ACLK )
+	        always @( posedge s_axi_aclk )
 	        begin
 	          if (mem_rden)
 	            begin
@@ -593,13 +653,13 @@
 	    end
 	  end       
 	endgenerate
-	//Output register or memory read data
+	//output register or memory read data
 
 	always @( mem_data_out, axi_rvalid)
 	begin
 	  if (axi_rvalid) 
 	    begin
-	      // Read address mux
+	      // read address mux
 	      axi_rdata <= mem_data_out[0];
 	    end   
 	  else
@@ -608,8 +668,8 @@
 	    end       
 	end    
 
-	// Add user logic here
+	// add user logic here
 
-	// User logic ends
+	// user logic ends
 
 	endmodule
