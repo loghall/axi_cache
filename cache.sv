@@ -39,8 +39,13 @@ module cache_props(
     reg [31 : 0] latch_mem_data_in; 
     reg [31 : 0] latch_mem_addr;
     reg [6 : 0] latch_mem_line_idx;
+    reg [31 : 0] last_mem_addr; 
+    reg [31 : 0] first_mem_addr; 
     reg [4 : 0] counter; 
     reg rst_seen;
+
+    // cover regs
+    reg seen_w, seen_r, seen_miss, seen_mem_valid, seen_mem_last;
 
     wire req_now = cpu_re || cpu_we; 
 
@@ -79,176 +84,101 @@ module cache_props(
             0
         )
     ); 
-    // mem addr aligned
-    assume_mem_aligned: assume property(
-        iff_instant(
-            clk, faux_rst,
-            1, 
-            mem_addr % 4, 
-            0
-        )
-    );
-    // no read/write at same time 
-    assume_mutex_rw: assume property(
-        iff_instant(
-            clk, faux_rst, 
-            1, 
-            cpu_we && cpu_re, 
-            0
-        )
-    ); 
-    /*
-    // only r/w while ready
-    assume_rw_only_in_ready: assume property(
-        iff_instant(
-            clk, faux_rst,
-            $rose(cpu_we) || $rose(cpu_re), 
-            $past(state == READY, 1), 
-            1
-        )
-    ); 
-    */ 
-    // 1 cycle we
-    assume_we_only_1_cycle: assume property(
-        implies_1cycle(
-            clk, faux_rst, 
-            $rose(cpu_we), 
-            !cpu_we
-        )
-    ); 
-    // 1 cycle re
-    assume_re_only_1_cycle: assume property(
-        implies_1cycle(
-            clk, faux_rst, 
-            $rose(cpu_re), 
-            !cpu_re
-        )
-    ); 
-    // mem_wstb = '1111
-    assume_const_mem_stb: assume property(
-        iff_instant(
-            clk, faux_rst, 
-            1, 
-            mem_wstb, 
-            4'b1111
-        )
-    ); 
-    throw_away: assume property(
-        iff_instant(
-            clk, faux_rst,
-            1,
-            mem_addr[6:0] <= 124, 
-            1
-        )
-    )
-    /* 
     // mem_addr == line aligned cpu_addr for counter == 0
     mem_addr_line_aligned: assume property(
-        iff_instant(
+        iff_1cycle(
             clk, faux_rst, 
-            state == REPLACE && counter == 0 && mem_data_valid,
+            counter == 0 && state == REPLACE && $past(state == READY, 1),
             mem_addr, 
             {(cpu_addr >> 7), 7'b0}
         )
     ); 
-    // mem_address increments by word size when filling cache line
-    assume_inc_mem_addr: assume property(
-        iff_1cycle(
-            clk, faux_rst, 
-            state == REPLACE && counter != 31 && mem_data_valid, 
-            latch_mem_addr + 4, 
-            mem_addr
-        )
-    ); 
-    
-    // mem_address only changes after data valid
-    assume_chg_mem_addr_on_valid: assume property(
-        iff_instant(
-            clk, faux_rst, 
-            $changed(mem_addr), 
+    // mem addr should only change when mem data is valid
+    mem_addr_changed_1: assume property(
+        implies_instant(
+            clk, faux_rst,
+            state == REPLACE && $changed(mem_addr) && mem_addr != first_mem_addr,
             $past(mem_data_valid, 1),
-            1
         )
     );
-    // mem last only asserted for last word
-    assume_mem_last_set: assume property(
-        iff_instant(
-            clk, faux_rst, 
-            $rose(mem_last), 
-            $past(counter == 31 && state == REPLACE && mem_data_valid, 1), 
-            1
+    // should increment by 4 each time data is valid
+    mem_addr_changed_2: assume property(
+        iff_1cycle(
+            clk, faux_rst,
+            state == REPLACE && mem_addr != last_mem_addr && mem_data_valid,
+            mem_addr, 
+            past_mem_addr + 4
         )
     ); 
-    // 1 cycle mem last
-    assume_mem_last_1_cycle: assume property(
-        implies_1cycle(
-            clk, faux_rst, 
-            $rose(mem_last), 
-            !mem_last
-        )
-    ); 
-    // data valid only in replace
-    assume_mem_valid_set: assume property(
-        iff_instant(
+    // data valid takes at least two cycles 
+    mem_valid_set: assume property(
+        implies_instant(
             clk, faux_rst,
             $rose(mem_data_valid),
-            $past(state == REPLACE, 1, 1)
-            1
+            state == REPLACE && $past(state == REPLACE, 2); 
         )
-    )
-    // 1 cycle data_valid
-    assume_mem_data_valid_1_cycle: assume property(
+    );
+    // mem data valid only high for one cycle 
+    mem_valid_1cycle: assume property(
+        implies_1cycle(
+            clk, faux_rst,
+            $rose(mem_data_valid),
+            $fell(mem_data_valid)
+        )
+    );
+    // data must be valid for mem_last; counter must be 31; state must be replace 
+    mem_last_set: assume property(
+        implies_instant(
+            clk, faux_rst
+            $rose(mem_last),
+            $rose(mem_data_valid) && state == REPLACE && counter == 31
+        )
+    );
+    // mem last only high one cycle
+    mem_last_1cycle: assume property(
         implies_1cycle(
             clk, faux_rst, 
-            $rose(mem_data_valid), 
-            !mem_data_valid
-        )
-    ); 
-    //  cpu data assumes... 
-    assume_cpu_data_in: assume property(
-        iff_instant(
-            clk, faux_rst, 
-            1, 
-            cpu_data_in == 32'hAAAAAAAA || cpu_data_in == 32'h55555555 || cpu_data_in == 32'hFFFFFFFF || cpu_data_in == 32'h0, 
-            1
+            $rose(mem_last),
+            $fell(mem_last)
         )
     );
-    // mem data assumes
-    assume_mem_data_in: assume property(
+    // cpu data constraints
+    cpu_data: assume property(
         iff_instant(
-            clk, faux_rst, 
+            clk, faux_rst,
             1,
-            (mem_data_in == 32'hAAAAAAAA || mem_data_in == 32'h55555555 || mem_data_in == 32'hFFFFFFFF || mem_data_in == 32'h0),
+            cpu_data_in == 32'hFFFFFFFF || cpu_data_in == 32'h00000000,
             1
         )
     );
-    // simulates actual operating scenario; when data is ready from mem (i.e. mem_data_in changed), make data valid
-    assume_mem_data_valid_when_data: assume property(
-        implies_instant(
-            clk, faux_rst, 
-            $changed(mem_data_in), 
-            $rose(mem_data_valid)
+    // mem data constraints
+    mem_data: assume property(
+        iff_instant(
+            clk, faux_rst,
+            1,
+            mem_data_in == 32'hFFFFFFFF || mem_data_in == 32'h00000000,
+            1
         )
     );
-    */ 
-    // misc for jaspergold reset stuff; reset asserts automatically if it hasn't been triggered
-    assume_force_reset: assume property(
+    // force initial reset
+    reset_1: assume property(
         iff_instant(
-            clk, faux_rst, 
+            clk, faux_rst,
             !rst_seen,
-            reset_n, 
+            reset_n,
             0
         )
     );
-    // misc for jasper gold reset stuff; reset stays high once its triggered
-    assume_reset_deassert: assume property(
+    // hold reset high otherwise 
+    reset_2: assume property(
         iff_instant(
             clk, faux_rst,
             rst_seen,
-            reset_n,
+            reset_n, 
             1
-        ) 
+        )
     );
+
     
     //////////////////////////////////////////////////////////
     //
@@ -434,6 +364,16 @@ module cache_props(
         )
     );
 
+    //////////////////////////////////////////////////////////
+    //
+    // cover properties !!!
+    //
+    //////////////////////////////////////////////////////////
+    cover_seen_w: cover property(@(posedge clk) seen_w == 1);
+    cover_seen_r: cover property(@(posedge clk) seen_w == 1); 
+    cover_seen_miss: cover property(@(posedge clk) seen_w == 1); 
+    cover_seen_mem_last: cover property(@(posedge clk) seen_w == 1);  
+    cover_seen_mem_valid: cover property(@(posedge clk) seen_w == 1); 
     
     //////////////////////////////////////////////////////////
     //
@@ -453,6 +393,13 @@ module cache_props(
             latch_mem_data_in <= 0; 
             latch_mem_line_idx <= 0;
             counter <= 0; 
+            last_mem_addr <= 0; 
+            first_mem_addr <= 0; 
+            seen_w <= 0;
+            seen_r <= 0;
+            seen_mem_last <= 0;
+            seen_mem_valid <= 0;
+            seen_miss <= 0; 
         end
         else begin 
             if (state == READY && req_now) begin // latch CPU data if valid request
@@ -462,14 +409,26 @@ module cache_props(
                 latch_set_idx = cpu_addr[14 : 9]; 
                 latch_way_idx = cpu_addr[8 : 7];
                 latch_cpu_line_idx = cpu_addr[6 : 0];
+
+                if(cpu_we && !cpu_re) seen_w <= 1;
+                if(cpu_re && !cpu_we) seen_r <= 1; 
             end
             else if (state == REPLACE) begin // latch mem data while filling cache 
+                seen_miss <= 1; 
+                if(counter == 0) begin
+                    first_mem_addr <= mem_addr; 
+                end
                 if(mem_data_valid) begin
                     latch_mem_addr <= mem_addr; 
                     latch_mem_data_in <= mem_data_in; 
                     latch_mem_line_idx <= mem_addr[6:0];
-                    counter <= counter + 5'b1;  
-                end         
+                    counter <= counter + 5'b1; 
+                    seen_mem_valid <= 1;  
+                end 
+                if(mem_last) begin
+                    last_mem_addr <= mem_addr;
+                    seen_mem_last <= 1;  
+                end       
             end
         end 
 
