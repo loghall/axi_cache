@@ -97,6 +97,7 @@ module cache_props(
             0
         )
     ); 
+    /*
     // only r/w while ready
     assume_rw_only_in_ready: assume property(
         iff_instant(
@@ -106,11 +107,12 @@ module cache_props(
             1
         )
     ); 
+    */ 
     // 1 cycle we
     assume_we_only_1_cycle: assume property(
         implies_1cycle(
             clk, faux_rst, 
-            cpu_we, 
+            $rose(cpu_we), 
             !cpu_we
         )
     ); 
@@ -118,7 +120,7 @@ module cache_props(
     assume_re_only_1_cycle: assume property(
         implies_1cycle(
             clk, faux_rst, 
-            cpu_re, 
+            $rose(cpu_re), 
             !cpu_re
         )
     ); 
@@ -131,6 +133,15 @@ module cache_props(
             4'b1111
         )
     ); 
+    throw_away: assume property(
+        iff_instant(
+            clk, faux_rst,
+            1,
+            mem_addr[6:0] <= 124, 
+            1
+        )
+    )
+    /* 
     // mem_addr == line aligned cpu_addr for counter == 0
     mem_addr_line_aligned: assume property(
         iff_instant(
@@ -149,6 +160,7 @@ module cache_props(
             mem_addr
         )
     ); 
+    
     // mem_address only changes after data valid
     assume_chg_mem_addr_on_valid: assume property(
         iff_instant(
@@ -218,6 +230,7 @@ module cache_props(
             $rose(mem_data_valid)
         )
     );
+    */ 
     // misc for jaspergold reset stuff; reset asserts automatically if it hasn't been triggered
     assume_force_reset: assume property(
         iff_instant(
