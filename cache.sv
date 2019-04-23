@@ -6,13 +6,13 @@ module cache_props(
     input wire clk, 
     input wire reset_n, 
     input wire faux_rst,
-    input wire [31 : 0] cpu_addr, 
+    input wire [15 : 0] cpu_addr, 
     input wire [31 : 0] cpu_data_in, 
     input wire cpu_we,
     input wire cpu_re,  
     input wire [3 : 0] cpu_wstb,
     input wire [31 : 0] cpu_data_out,
-    input wire [31 : 0] mem_addr,  
+    input wire [15 : 0] mem_addr,  
     input wire [31 : 0] mem_data_in, 
     input wire [3 : 0] mem_wstb,
     input wire mem_data_valid, 
@@ -20,7 +20,7 @@ module cache_props(
     input wire miss, 
 
     input [7 : 0] data_cache [63 : 0][3 : 0][127 : 0], 
-    input [16 : 0] tag_array [63 : 0][3 : 0], 
+    input [0 : 0] tag_array [63 : 0][3 : 0], 
     input valid_bits [63 : 0][3 : 0], 
     input state
 );
@@ -50,7 +50,7 @@ module cache_props(
     wire req_now = cpu_re || cpu_we; 
 
     // generate set, way for current address (NOW); used to determine misses 
-    wire [16 : 0] tag_now = cpu_addr[31 : 15]; 
+    wire [0 : 0] tag_now = cpu_addr[15]; 
     wire [5 : 0] set_idx_now = cpu_addr[14 : 9]; 
     wire [1 : 0] way_idx_now = cpu_addr[8 : 7];
 
@@ -374,7 +374,7 @@ module cache_props(
     cover_seen_miss: cover property(@(posedge clk) seen_w == 1); 
     cover_seen_mem_last: cover property(@(posedge clk) seen_w == 1);  
     cover_seen_mem_valid: cover property(@(posedge clk) seen_w == 1); 
-    
+
     //////////////////////////////////////////////////////////
     //
     // aux 
