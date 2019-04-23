@@ -212,7 +212,10 @@
 
 		// read ready. this signal indicates that the master can
     // accept the read data and response information.
-		input wire  s_axi_rready
+		input wire  s_axi_rready, 
+
+		// high if cache missed on request
+		input wire cache_miss
 	);
 
 	// axi4full signals
@@ -267,18 +270,11 @@
 	//C_ADDR_LSB = 3 for 42 bits (n downto 3)
 
 	localparam integer C_ADDR_LSB = (C_S_AXI_DATA_WIDTH/32)+ 1;
-	localparam integer C_OPT_MEM_ADDR_BITS = 3;
-	localparam integer C_USER_NUM_MEM = 1;
 	//----------------------------------------------
 	//-- signals for user logic memory space example
 	//------------------------------------------------
-	wire [C_OPT_MEM_ADDR_BITS:0] mem_address;
-	wire [C_USER_NUM_MEM-1:0] mem_select;
-	reg [C_S_AXI_DATA_WIDTH-1:0] mem_data_out[0 : C_USER_NUM_MEM-1];
-
-	genvar i;
-	genvar j;
-	genvar mem_byte_index;
+	reg axi_wready_wlast; 
+	reg cache_busy; 
 
 	// i/o connections assignments
 
@@ -323,7 +319,7 @@
 	          axi_awv_awr_flag  <= 1'b1; 
 	          // used for generation of bresp() and bvalid
 	        end
-	      else if (s_axi_wlast && axi_wready)          
+	      else if (axi_wready_wlast && ~cache_busy)          
 	      // preparing to accept next address after current write burst tx completion
 	        begin
 	          axi_awv_awr_flag  <= 1'b0;
@@ -354,8 +350,8 @@
 	        begin
 	          // address latching 
 	          axi_awaddr <= s_axi_awaddr[C_S_AXI_ADDR_WIDTH - 1:0];  
-	           axi_awburst <= s_axi_awburst; 
-	           axi_awlen <= s_axi_awlen;     
+	          axi_awburst <= s_axi_awburst; 
+	          axi_awlen <= s_axi_awlen;     
 	          // start address of transfer
 	          axi_awlen_cntr <= 0;
 	        end   
@@ -413,13 +409,13 @@
 	    end 
 	  else
 	    begin    
-	      if ( ~axi_wready && s_axi_wvalid && axi_awv_awr_flag)
+	      if ( ~axi_wready && s_axi_wvalid && axi_awv_awr_flag && ~cache_busy)
 	        begin
 	          // slave can accept the write data
 	          axi_wready <= 1'b1;
 	        end
 	      //else if (~axi_awv_awr_flag)
-	      else if (s_axi_wlast && axi_wready)
+	      else if ((s_axi_wlast && axi_wready) || cache_busy)
 	        begin
 	          axi_wready <= 1'b0;
 	        end
@@ -439,11 +435,14 @@
 	      axi_bvalid <= 0;
 	      axi_bresp <= 2'b0;
 	      axi_buser <= 0;
+				axi_wready_wlast <= 1'b0; 
 	    end 
 	  else
-	    begin    
-	      if (axi_awv_awr_flag && axi_wready && s_axi_wvalid && ~axi_bvalid && s_axi_wlast )
+	    begin   
+				axi_wready_wlast <= (axi_wready && axi_wlast) || axi_wready_wlast;  
+	      if (axi_awv_awr_flag && s_axi_wvalid && ~axi_bvalid && axi_wready_wlast && ~cache_busy)
 	        begin
+						axi_wready_wlast <= 1'b0;
 	          axi_bvalid <= 1'b1;
 	          axi_bresp  <= 2'b0; 
 	          // 'okay' response 
@@ -588,73 +587,23 @@
 	    end 
 	  else
 	    begin    
-	      if (axi_arv_arr_flag && ~axi_rvalid)
+	      if (axi_arv_arr_flag && ~axi_rvalid && ~cache_busy)
 	        begin
 	          axi_rvalid <= 1'b1;
 	          axi_rresp  <= 2'b0; 
 	          // 'okay' response
 	        end   
-	      else if (axi_rvalid && s_axi_rready)
+	      else if ((axi_rvalid && s_axi_rready) || cache_busy) 
 	        begin
 	          axi_rvalid <= 1'b0;
 	        end            
 	    end
 	end    
-	// ------------------------------------------
-	// -- example code to access user logic memory region
-	// ------------------------------------------
-
-	generate
-	  if (C_USER_NUM_MEM >= 1)
-	    begin
-	      assign mem_select  = 1;
-	      assign mem_address = (axi_arv_arr_flag? axi_araddr[C_ADDR_LSB+C_OPT_MEM_ADDR_BITS:C_ADDR_LSB]:(axi_awv_awr_flag? axi_awaddr[C_ADDR_LSB+C_OPT_MEM_ADDR_BITS:C_ADDR_LSB]:0));
-	    end
-	endgenerate
-	     
-	// implement block ram(s)
-	generate 
-	  for(i=0; i<= C_USER_NUM_MEM-1; i=i+1)
-	    begin:bram_gen
-	      wire mem_rden;
-	      wire mem_wren;
 	
-	      assign mem_wren = axi_wready && s_axi_wvalid ;
-	
-	      assign mem_rden = axi_arv_arr_flag ; //& ~axi_rvalid
-	     
-	      for(mem_byte_index=0; mem_byte_index<= (C_S_AXI_DATA_WIDTH/8-1); mem_byte_index=mem_byte_index+1)
-	      begin:byte_bram_gen
-	        wire [8-1:0] data_in ;
-	        wire [8-1:0] data_out;
-	        reg  [8-1:0] byte_ram [0 : 15];
-	        integer  j;
-	     
-	        //assigning 8 bit data
-	        assign data_in  = s_axi_wdata[(mem_byte_index*8+7) -: 8];
-	        assign data_out = byte_ram[mem_address];
-	     
-	        always @( posedge s_axi_aclk )
-	        begin
-	          if (mem_wren && s_axi_wstrb[mem_byte_index])
-	            begin
-	              byte_ram[mem_address] <= data_in;
-	            end   
-	        end    
-	      
-	        always @( posedge s_axi_aclk )
-	        begin
-	          if (mem_rden)
-	            begin
-	              mem_data_out[i][(mem_byte_index*8+7) -: 8] <= data_out;
-	            end   
-	        end    
-	               
-	    end
-	  end       
-	endgenerate
-	//output register or memory read data
-
+	/*
+	----
+	maybe helpful
+	---
 	always @( mem_data_out, axi_rvalid)
 	begin
 	  if (axi_rvalid) 
@@ -666,7 +615,8 @@
 	    begin
 	      axi_rdata <= 32'h00000000;
 	    end       
-	end    
+	end
+	*/     
 
 	// add user logic here
 
