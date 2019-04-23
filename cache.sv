@@ -102,26 +102,8 @@ module cache_props(
         iff_instant(
             clk, faux_rst,
             $rose(cpu_we) || $rose(cpu_re), 
-            state, 
-            READY
-        )
-    ); 
-    // no r/w signal while handling miss 
-    assume_no_rw_while_busy: assume property(
-        iff_instant(
-            clk, faux_rst, 
-            state == REPLACE, 
-            cpu_we || cpu_re, 
-            0
-        )
-    ); 
-    // mem_wstb = '1111
-    assume_const_mem_stb: assume property(
-        iff_instant(
-            clk, faux_rst, 
-            1, 
-            mem_wstb, 
-            4'b1111
+            $past(state == READY, 1), 
+            1
         )
     ); 
     // 1 cycle we
@@ -140,40 +122,22 @@ module cache_props(
             !cpu_re
         )
     ); 
-    // mem_addr == line aligned cpu_addr if not handling miss
-    assume_mem_addr_no_miss: assume property(
+    // mem_wstb = '1111
+    assume_const_mem_stb: assume property(
         iff_instant(
             clk, faux_rst, 
-            state == READY, 
-            mem_addr, 
-            {(cpu_addr >> 7), 7'b0}
+            1, 
+            mem_wstb, 
+            4'b1111
         )
     ); 
     // mem_addr == line aligned cpu_addr for counter == 0
     mem_addr_line_aligned: assume property(
         iff_instant(
             clk, faux_rst, 
-            state == REPLACE && counter ==0,
+            state == REPLACE && counter == 0 && mem_data_valid,
             mem_addr, 
             {(cpu_addr >> 7), 7'b0}
-        )
-    ); 
-    // mem_last == 0 if not handling miss
-    assume_mem_last_no_miss: assume property(
-        iff_instant(
-            clk, faux_rst, 
-            state == READY, 
-            mem_last, 
-            0
-        )
-    ); 
-    // mem_data_valid == 0 if not handling miss
-    assume_mem_valid_no_miss: assume property(
-        iff_instant(
-            clk, faux_rst, 
-            state == READY, 
-            mem_data_valid, 
-            0
         )
     ); 
     // mem_address increments by word size when filling cache line
@@ -198,41 +162,34 @@ module cache_props(
     assume_mem_last_set: assume property(
         iff_instant(
             clk, faux_rst, 
-            state == REPLACE, 
-            counter == 31, 
-            mem_last
+            $rose(mem_last), 
+            $past(counter == 31 && state == REPLACE && mem_data_valid, 1), 
+            1
         )
     ); 
     // 1 cycle mem last
     assume_mem_last_1_cycle: assume property(
         implies_1cycle(
             clk, faux_rst, 
-            mem_last, 
+            $rose(mem_last), 
             !mem_last
         )
     ); 
+    // data valid only in replace
+    assume_mem_valid_set: assume property(
+        iff_instant(
+            clk, faux_rst,
+            $rose(mem_data_valid),
+            $past(state == REPLACE, 1, 1)
+            1
+        )
+    )
     // 1 cycle data_valid
     assume_mem_data_valid_1_cycle: assume property(
         implies_1cycle(
             clk, faux_rst, 
-            mem_data_valid, 
+            $rose(mem_data_valid), 
             !mem_data_valid
-        )
-    ); 
-    // if last, data must be valid
-    assume_mem_last_implies_valid_1: assume property(
-        implies_instant(
-            clk, faux_rst, 
-            mem_last,
-            mem_data_valid
-        )
-    ); 
-    // if data is not valid, it is not the last data 
-    assume_mem_last_implies_valid_2: assume property(
-        implies_instant(
-            clk, faux_rst, 
-            !mem_data_valid, 
-            !mem_last
         )
     ); 
     //  cpu data assumes... 
