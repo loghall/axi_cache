@@ -1,26 +1,22 @@
 package propsPkg;
-	property iff_instant(clk, reset_n, pre, expression1, expression2); 
-		@(posedge clk) disable iff(!reset_n)
+	property iff_instant(clk, disable_cond, pre, expression1, expression2); 
+		@(posedge clk) disable iff(disable_cond)
 			pre |-> expression1 == expression2; 
 	endproperty 
 
-    property iff_1cycle(clk, reset_n, pre, expression1, expression2); 
-		@(posedge clk) disable iff(!reset_n)
+    property iff_1cycle(clk, disable_cond, pre, expression1, expression2); 
+		@(posedge clk) disable iff(disable_cond)
 			pre |-> ##1 expression1 == expression2; 
 	endproperty  
 
-	property implies_instant(clk, reset_n, expression1, expression2); 
-		@(posedge clk) disable iff(!reset_n)
+	property implies_instant(clk, disable_cond, expression1, expression2); 
+		@(posedge clk) disable iff(disable_cond)
 			expression1 |-> expression2; 
 	endproperty 
 
-    property implies_1cycle(clk, reset_n, expression1, expression2); 
-		@(posedge clk) disable iff(!reset_n)
+    property implies_1cycle(clk, disable_cond, expression1, expression2); 
+		@(posedge clk) disable iff(disable_cond)
 			expression1 |-> ##1 expression2; 
 	endproperty 
 
-    property reset_cond(clk, reset_cond, expression1); 
-		@(posedge clk) 
-			reset_cond |-> ##1 expression1; 
-	endproperty 
 endpackage 
