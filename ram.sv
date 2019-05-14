@@ -58,19 +58,13 @@ module ram_props #(
             i_addr % 4 == 0
         )
     );
-
-    //------------------------------------------
-    // 
-    // Helper functions
-    // 
-    //------------------------------------------
     
     //------------------------------------------
     // 
     // Assert 
     // 
     //------------------------------------------
-    assert_rdata : assert property( // read data should always be correct
+    assert_rdata : assert property( // verify that arb_data and output data agree 
         implies_1cycle(
             clk, !reset_n,
             arb_addr == i_addr,
@@ -83,6 +77,8 @@ module ram_props #(
     // Aux Code 
     // 
     //------------------------------------------
+
+    // track what the value of arb_data should be in the memory. 
     always@(posedge clk) begin
         integer n; 
 
@@ -91,8 +87,11 @@ module ram_props #(
             arb_data_2 <= 0; 
         end 
         else begin
+            // writes are visible one cycle later, so this is required. 
             arb_data_1 <= arb_data_2;
-            if(i_wen && arb_addr == i_addr) begin
+
+            // if its a write, get the new data; must apply BEN
+            if(i_wen && arb_addr == i_addr) begin 
                 for(n = 0; n < MEM_DATA_SIZE_BYTES; n = n + 1) begin   
                     if(i_ben[n]) begin
                         arb_data_2[n * 8 + 7 -: 8] <= i_write_data[n * 8 + 7 -: 8]; 

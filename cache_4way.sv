@@ -82,7 +82,7 @@ module cache_4way_props #(
         )
     );
 
-    assume_way_sel_onehot : assume property( // addresses are word aligned
+    assume_way_sel_onehot : assume property( // only one way selected at a time
         implies_1cycle(
             clk, !reset_n,
             1,
@@ -90,12 +90,6 @@ module cache_4way_props #(
         )
     );
 
-    //------------------------------------------
-    // 
-    // Helper functions
-    // 
-    //------------------------------------------
-    
     //------------------------------------------
     // 
     // Assert 
@@ -126,17 +120,20 @@ module cache_4way_props #(
     // Aux Code 
     // 
     //------------------------------------------
-    generate  // tag tracker
+    
+    // track the correct tag for each way (same as cache_way.sv, but x4)
+    generate  
         for(m = 0; m < NUM_CACHE_WAY; m = m + 1) begin : gen_aux_tagdata
             integer n; 
             always@(posedge clk) begin
-
                 if(!reset_n) begin
                         arb_tag_1[m] <= 0;
                         arb_tag_2[m] <= 0; 
                 end 
                 else begin 
-                    arb_tag_1[m] <= arb_tag_2[m]; 
+                    arb_tag_1[m] <= arb_tag_2[m];
+
+                    // way must be selected for writes to occur!  
                     if(i_tag_wen && i_way_select[m] && i_cache_addr == arb_addr) begin
                         arb_tag_2[m] <= i_tag_data; 
                     end
@@ -144,17 +141,20 @@ module cache_4way_props #(
             end
         end
     endgenerate 
-    generate  // data tracker 
+
+    // track the correct data for each way (same as cache_way.sv, but x4) 
+    generate  
         for(m = 0; m < NUM_CACHE_WAY; m = m + 1) begin : gen_aux_rdata
             integer n; 
             always@(posedge clk) begin
-
                 if(!reset_n) begin
                         arb_data_1[m] <= 0;
                         arb_data_2[m] <= 0; 
                 end 
                 else begin 
                     arb_data_1[m] <= arb_data_2[m]; 
+
+                    // way must be selected for writes to occur! 
                     if(i_cache_wen && i_way_select[m] && i_cache_addr == arb_addr) begin
                         for(n = 0; n < CACHE_DATA_SIZE_BYTES; n = n + 1) begin   
                             if(i_cache_ben[n]) begin

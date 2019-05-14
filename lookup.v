@@ -36,15 +36,15 @@ module lookup # (
     input wire reset_n; 
 
     // lookup request lines
-    input wire i_lookup_req;
-    input wire [TAG_WIDTH - 1 : 0] i_addr_tag;
-    input wire [SET_WIDTH - 1 : 0] i_addr_set;
+    input wire i_lookup_req; // request for lookup
+    input wire [TAG_WIDTH - 1 : 0] i_addr_tag; // tag to check
+    input wire [SET_WIDTH - 1 : 0] i_addr_set; // set to checj in 
     input wire [TAG_WIDTH + 1 - 1 : 0] i_addr_tag_store [0 : NUM_WAYS - 1]; // tag store also keeps a valid bit (i.e. + 1)! 
 
     // lookup result lines
-    output wire o_lookup_valid; 
-    output wire o_hit;
-    output wire [NUM_WAYS - 1 : 0] o_way_select; 
+    output wire o_lookup_valid; // operation complete
+    output wire o_hit; // tag was in the tag store
+    output wire [NUM_WAYS - 1 : 0] o_way_select; // way for the tag regardless of hit/miss
 
     //---------------------------------------------
     //
@@ -80,7 +80,7 @@ module lookup # (
                 hit <= lookup_hit; 
                 way_select <= select; 
                 
-                // update LRU
+                // update history based on specification 
                 if(select[0]) begin 
                     history[i_addr_set][0] <= 1'b1; 
                     history[i_addr_set][1] <= 1'b1; 
@@ -121,6 +121,8 @@ module lookup # (
                         (all_valid) ? lru :
                         invalid; 
 
+    // if the way is valid and the tag matches, lookup is a hit! 
+    // note that lookup is one-hot for hits; non-codeword (0) for misses
     always@(*) begin
         integer i; 
 
@@ -132,6 +134,8 @@ module lookup # (
         end 
     end 
     
+    // return the first way that is invalid
+    // note that invalid is one-hot if an invalid way exists; non-codeword (0) if all ways valid
     always@(*) begin 
         integer i;
         
@@ -143,6 +147,8 @@ module lookup # (
         end
     end 
     
+    // determine LRU way for eviction if necessary
+    // based on specification 
     always@(*) begin 
         lru = {NUM_WAYS{1'b0}}; 
         

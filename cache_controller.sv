@@ -1,6 +1,5 @@
 `include "props_pkg.sv" 
 `include "intf_props_pkg.sv"
-`include "constants.v"
 
 `define TAG TAG_MSB : TAG_LSB
 `define LINE LINE_MSB : LINE_LSB
@@ -149,7 +148,7 @@ module cache_props #(
 
     //------------------------------------------
     // 
-    // Global assumes/asserts for req/rdy interfacing 
+    // Global assumes/asserts for req/rdy interfacing (see intf_props_pkg.sv for more) 
     // 
     //------------------------------------------
     `REQ_PROP(clk, reset_n, i_req, o_rdy, assume, 0, i_req_assume)
@@ -220,13 +219,15 @@ module cache_props #(
     // 
     //------------------------------------------
 
-    assume_way_select_onehot: assume property(
+    // way select is 1 hot (asserted in lookup.v)
+    assume_way_select_onehot: assume property( 
         implies_1cycle(
             clk, !reset_n,
             $rose(lookup_req),
             $onehot(way_select) == 1)
     );
 
+    // assume hit set correctly for our address (asserted in lookup.v) 
     assume_arb_addr_hit: assume property(
         iff_instant(
             clk, !reset_n,
@@ -236,6 +237,7 @@ module cache_props #(
         )
     );
 
+    // assume way output correctly for hit (asserted in lookup.v) 
     assume_arb_addr_cache_hit: assume property(
         implies_1cycle(
             clk, !reset_n,
@@ -244,6 +246,7 @@ module cache_props #(
         )
     );
 
+    // assume lookup_valid only rises after request (asserted in lookup.v) 
     assume_lookup_req_low_valid: assume property(
         implies_instant(
             clk, !reset_n,
@@ -257,7 +260,8 @@ module cache_props #(
     // Global asserts for arb addr 
     // 
     //------------------------------------------
-    assert_read_correct : assert property( // reads are always correct to this address
+    // reads are always correct to this address
+    assert_read_correct : assert property( 
         implies_instant(
             clk, !reset_n,
             $rose(o_rdy) && i_addr_r == arb_addr && i_wen_r == 0,
@@ -265,7 +269,8 @@ module cache_props #(
         ) 
     );
 
-    assert_write_thru : assert property( // write through for all writes 
+    // write through for all writes 
+    assert_write_thru : assert property( 
         implies_instant(
             clk, !reset_n,
             $rose(o_rdy) && i_addr_r == arb_addr && i_wen_r == 1,
@@ -273,8 +278,8 @@ module cache_props #(
         ) 
     );
 
-    /*
-    assert_lookup_req_1cycle : assert property( // request only high for a single cycle
+    // request only high for a single cycle (assumed in lookup.v)
+    assert_lookup_req_1cycle : assert property( 
         implies_1cycle(
             clk, !reset_n,
             lookup_req,
@@ -282,19 +287,19 @@ module cache_props #(
         )
     );
 
-    assert_lookup_req_wait : assert property( // assert lookup valid signal (note, assume this in cache controller)
+     // only lookup_request when lookup_valid low (assumed in lookup.v) 
+    assert_lookup_req_wait : assert property(
         implies_instant(
             clk, !reset_n,
             $rose(lookup_req),
             !lookup_valid
         ) 
     );
-    */
-
-    /*
+    
+    // assert that tags for arb_set are always updated correctly! 
     genvar i; 
     for(i = 0; i < NUM_WAYS; i = i + 1) begin : gen_tag_update
-        assert_tag_update : assert property( // assert tags updated correct
+        assert_tag_update : assert property( 
             implies_1cycle(
                 clk, !reset_n,
                 $rose(o_rdy) && arb_addr[`SET] == i_addr_r[`SET],
@@ -302,13 +307,15 @@ module cache_props #(
             ) 
         );
     end 
-    */
+    
 
     //------------------------------------------
     // 
     // high level controller tracker 
     // 
     //------------------------------------------
+
+    // latch relevant request related signals 
     always@(posedge clk) begin
         if(!reset_n) begin
             i_addr_r <= 0;
@@ -326,6 +333,7 @@ module cache_props #(
         end
     end
 
+    // track the mem_valid_ctr; allows arb_data to be correctly assumed for cacheline fills 
     always@(posedge clk) begin
         if(!reset_n) begin
             mem_valid_ctr <= 0; 
@@ -349,7 +357,7 @@ module cache_props #(
                                 (addr_way[1]) ? 1 : 
                                 (addr_way[2]) ? 2 : 
                                 3; 
-    // arb_addr logistics 
+    // keep track of the state of arb_addr 
     always@(posedge clk) begin
         integer i; 
         if(!reset_n) begin
@@ -376,14 +384,15 @@ module cache_props #(
                     arb_cached <= 1; 
                     arb_way <= addr_way_decoded; 
                 end 
-                else if(addr_way_decoded == arb_way) begin // otherwise we may have gotten evicted 
+                // otherwise we may have gotten evicted! 
+                else if(addr_way_decoded == arb_way) begin 
                     arb_cached <= 0; 
                 end 
             end  
         end 
     end
 
-    // arb mem requests
+    // track mem requests for arb_addr; used for write-through verification
     always@(posedge clk) begin
         if(!reset_n) begin
             arb_mem_waddr <= 0;
@@ -399,7 +408,7 @@ module cache_props #(
         end 
     end 
 
-    // arb value updates
+    // track the actual value that should be stored by arb_data 
     always@(posedge clk) begin
         integer n; 
         if(!reset_n) begin
@@ -411,6 +420,7 @@ module cache_props #(
             if($rose(o_rdy) && arb_addr_req) begin
                 arb_cache_fill <= 0;
                 
+                // update arb_data on writes to arb_addr 
                 if(i_addr_r == arb_addr && i_wen_r) begin
                     for(n = 0; n < DATA_SIZE_BYTES; n = n + 1) begin   
                         if(i_ben_r[n]) begin
@@ -423,6 +433,7 @@ module cache_props #(
                 arb_cache_fill <= 1; 
             end 
             else if(arb_cache_fill) begin
+                // update arb_data appropriately on cache line fills 
                 if(i_mem_valid && mem_valid_ctr == arb_addr[`LINE]) begin 
                     arb_data <= i_mem_data; 
                 end 
@@ -433,11 +444,7 @@ module cache_props #(
         end
     end
 
-    //------------------------------------------
-    // 
-    // track all updates to arb_set tag store
-    // 
-    //------------------------------------------
+    // track all updates to the tag_store at arb_set 
     always@(posedge clk) begin
         if(!reset_n) begin
             for(j = 0; j < NUM_WAYS; j = j + 1) begin

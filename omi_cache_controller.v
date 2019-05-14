@@ -66,17 +66,12 @@ module cache #(
             case(state) 
                 STATE_READY: begin
                     if(i_cache_req) begin
+                        // reset appropriate signals
                         cache_rdy <= 0;
                         read_ctr <= 0; 
-                        /*
-                        i_cache_addr_r <= i_cache_addr;
-                        i_cache_wen_r <= i_cache_wen;
-                        i_cache_ben_r <= i_cache_ben;
-                        i_cache_data_r <= i_cache_data;
-                        */
-                        // doesnt seem like we use the above
-                        i_cache_len_r <= i_cache_len;
 
+                        // latch relevant signals 
+                        i_cache_len_r <= i_cache_len;
                         addr <= i_cache_addr; 
                         wen <= i_cache_wen;
                         if(i_cache_wen) begin
@@ -84,11 +79,13 @@ module cache #(
                             data_out <= i_cache_data;
                         end
 
+                        // transition in omi-compliant manner 
                         req <= (rdy) ? 1'b1 : 1'b0; 
                         state <= (rdy) ? STATE_WAIT_ACK : STATE_WAIT_RDY;
                     end
                 end
                 STATE_WAIT_RDY: begin
+                    // must wait for rdy before transitioning 
                     req <= 0;
                     state <= STATE_WAIT_RDY; 
 
@@ -98,9 +95,11 @@ module cache #(
                     end
                 end
                 STATE_WAIT_ACK: begin
+                    // must wait for acknowledge before transitioning 
                     req <= 1;
                     state <= STATE_WAIT_ACK;
 
+                    // transition appropriately based on latched inputs
                     if(!rdy) begin
                         req <= 0;
                         state <= (i_cache_wen) ? STATE_WRITE_CACHE : STATE_READ_CACHE; 
@@ -111,14 +110,17 @@ module cache #(
                     req <= 0;
                     state <= STATE_READ_CACHE;
 
-                    if(read_ctr == i_cache_len_r) begin
+                    // request finished, go back to ready
+                    if(read_ctr ==  i_cache_len_r) begin
                         cache_rdy <= 1; 
                         state <= STATE_READY; 
                     end
+                    // latch the new data and update the counter 
                     else if(rdy) begin
                         cache_data <= data_in; 
                         cache_valid <= 1; 
 
+                            // must request the cache again! 
                             if(read_ctr != i_cache_len_r - 1) begin
                                 addr <= addr + BYTES_PER_WORD; 
                                 req <= 1; 
@@ -134,6 +136,7 @@ module cache #(
                 STATE_WRITE_CACHE: begin
                     state <= STATE_WRITE_CACHE;
                     
+                    // return whenever the cache finishes servicing the write 
                     if(rdy) begin   
                         cache_rdy <= 1;
                         state <= STATE_READY; 

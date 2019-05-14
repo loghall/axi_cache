@@ -1,3 +1,4 @@
+// PROVIDED BY XILINX; NO MODIFICATIONS; WE DID NOT WRITE THIS!
 
 `timescale 1 ns / 1 ps
 

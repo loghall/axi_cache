@@ -1,3 +1,4 @@
+// commonly needed verification properties
 package propsPkg;
 	property iff_instant(clk, disable_cond, pre, expression1, expression2); 
 		@(posedge clk) disable iff(disable_cond)

@@ -1,3 +1,5 @@
+// macros for ease of verification when using our design 
+
 `define REQ_SIGNAL_PROP(CLK, RESET_N, REQ, SIGNAL, PROPTYPE, DISABLE, ID) \
     ID``_stable_1: PROPTYPE`` property( \
         remain_stable(CLK``, DISABLE``, !$rose(REQ``) && REQ``, SIGNAL``) \
@@ -63,16 +65,6 @@
     ID``_aligned: PROPTYPE`` property( \
         force_value_instant(CLK``, DISABLE``, 1, ADDR`` % 4, 0) \
     ); 
-
-`define OMI_MASTER(CLK, RESET_N, REQ, RDY, ADDR, WEN, BEN, LEN, DATA, PROPTYPE, DISABLE, ID) \
-    `REQ_PROP(CLK``, RESET_N``, REQ``, RDY``, PROPTYPE, 0, PROPTYPE``_ID) \
-    `REQ_SIGNAL_PROP(CLK``, RESET_N``, REQ``, ADDR``, PROPTYPE``, DISABLE``, PROPTYPE``_ID``_addr) \
-    `REQ_SIGNAL_PROP(CLK``, RESET_N``, REQ``, WEN``, PROPTYPE``, DISABLE``, PROPTYPE``_ID``_wen) \
-    `REQ_SIGNAL_PROP(CLK``, RESET_N``, REQ`` && WEN``, BEN``, PROPTYPE``, PROPTYPE``_DISABLE``, ID``_ben) \
-    `REQ_SIGNAL_PROP(CLK``, RESET_N``, REQ``, DATA``, PROPTYPE``, DISABLE``, PROPTYPE``_ID``_data) \
-    `REQ_SIGNAL_PROP(CLK``, RESET_N``, REQ``, LEN``, PROPTYPE``, DISABLE``, PROPTYPE``_ID``_len) \
-    `ADDR_ALIGN(CLK``, RESET_N``, I_ADDR``, PROPTYPE``, DISABLE``, PROPTYPE``_ID``_i_addr)
-
 
 package intfPkg;
     /* Template 

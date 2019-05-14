@@ -223,28 +223,35 @@ module cache_ctrl #(
                         state <= STATE_REQUEST_LOOKUP; 
                     end
                 end
-                STATE_REQUEST_LOOKUP : begin
+                STATE_REQUEST_LOOKUP : begin 
+                    // at this time, we've got the tags and data from i_addr, so do a lookup 
                     lookup_req <= 1'b1; 
                     addr_tag <= i_addr_r[`TAG]; 
                     addr_set <= i_addr_r[`SET]; 
                     addr_tag_store <= tag_rdata; 
 
-                    // also latch the read data just in case 
+                    // also latch the read data just in case of read hit
                     addr_rdata <= cache_rdata;  
                     state <= STATE_LOOKUP;
                 end 
                 STATE_LOOKUP : begin
+                    // wait for lookup to finish 
                     if(lookup_valid) begin
+                        // latch relevant look up signals 
                         addr_hit <= hit;
                         addr_way <= way_select; 
                         cache_addr <= i_addr_r[`CACHE_ADDR];  
 
+                        // data already available for read hits; set and return to ready. 
+                        // NOTE: rdy is not set to 1 to allow an extra cycle for the tag
+                        // store to update. In the ready state, it will automatically be set
+                        // to 1 the next cycle
                         if(hit && !i_wen_r) begin
                             rdata <= addr_rdata[addr_way_decoded]; 
                             state <= STATE_READY; 
                         end 
                         else begin 
-                             // mem-op if not read/hit regardless 
+                             // mem-op if not read hit regardless 
                             mem_req <= i_mem_rdy; 
                             
                             if(i_wen_r) begin
@@ -290,7 +297,7 @@ module cache_ctrl #(
                         mem_wen <= 1'b0; 
                         
                         if(mem_wen) begin // handle writes
-                            if(addr_hit) begin // write-thru acked, we're good. 
+                            if(addr_hit) begin // write-thru acked, we're done with the operation.  
                                 rdy <= 1'b1;
                                 state <= STATE_READY;
                             end 

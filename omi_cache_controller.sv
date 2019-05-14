@@ -1,9 +1,15 @@
 `include "props_pkg.sv" 
 `include "intf_props_pkg.sv"
-`include "constants.v"
 
 import propsPkg::*; 
 import intfPkg::*; 
+   
+//---------------------------------------------------------------------------\\
+//                                                                           \\
+// See OMI specification for more details.                                   \\
+// See intf_props_pkg.sv for more details                                    \\
+//                                                                           \\
+//---------------------------------------------------------------------------\\
 
 module omi_props #(
     parameter integer ADDR_WIDTH = 10,
@@ -100,8 +106,8 @@ module omi_props #(
 
     //------------------------------------------
     // 
-    // Global asserts for OMI MASTER
-    // (from/to CPU)
+    // OMI Master Asserts (to mem)
+    // 
     // 
     //------------------------------------------
     `REQ_PROP(clk, reset_n, o_mem_req, i_mem_rdy, assert, !reset_n, assert_mem_req)

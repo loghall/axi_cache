@@ -73,7 +73,8 @@ module lookup_props #(
         )
     );
 
-    assume_req_1cycle : assume property( // request only high for a single cycle
+    // request only high for a single cycle (note, this is asserted in cache_controller.sv)
+    assume_req_1cycle : assume property( 
         implies_1cycle(
             clk, !reset_n,
             i_lookup_req,
@@ -81,7 +82,7 @@ module lookup_props #(
         )
     );
 
-    // assert lookup valid signal (note, assume this in cache controller)
+    // request only rises when lookup_valid is low (note, this is asserted in cache_controller.sv)
     assume_req_wait : assume property(
         implies_instant(
             clk, !reset_n,
@@ -90,9 +91,11 @@ module lookup_props #(
         ) 
     );
 
+    // ensure there are no duplicate tags that are valid (this isn't a valid execution state) 
+    // (also implicitly asserted by cache_controller.sv)
     genvar i; 
     for(i = 0; i < NUM_WAYS; i = i + 1) begin : no_duplicate_tag
-        no_duplicates : assume property ( // ensure there are no duplicate, valid tags (this isn't possible for the controller) 
+        no_duplicates : assume property ( 
             implies_instant (
                 clk, !reset_n, 
                 i_addr_tag_store[i][VALID],  
@@ -105,19 +108,13 @@ module lookup_props #(
 
     //------------------------------------------
     // 
-    // Helper functions
-    // 
-    //------------------------------------------
-    
-    //------------------------------------------
-    // 
     // Assert 
     // 
     //------------------------------------------
     
-    // way chosen and set appropriately 
+    // verify that appropriate conditions were met for each way selection; see the aux logic for more details 
     for(i = 0; i < NUM_WAYS; i = i + 1) begin : correct_way
-        correct_way_select : assert property ( // assert necessary conditions for way selection
+        correct_way_select : assert property ( 
             implies_instant (
                 clk, !reset_n, 
                 $changed(arb_way) && arb_way[i], 
@@ -126,8 +123,9 @@ module lookup_props #(
         );
     end
 
+    // a single way must always be selected, no more no less
     onehot_way_select : assert property (
-            implies_instant ( // only one way should ever be selected
+            implies_instant (
                 clk, !reset_n, 
                 $changed(arb_way), 
                 $onehot(arb_way)
@@ -167,7 +165,7 @@ module lookup_props #(
         ) 
     );
 
-    // assert lookup valid signal (note, assume this in cache controller)
+    // assert lookup valid signal rises 1 cycle after a request (note, this is assumed in cache_controller.sv)
     assert_lookup_valid_set : assert property(
         implies_1cycle(
             clk, !reset_n,
@@ -176,7 +174,7 @@ module lookup_props #(
         ) 
     );
 
-    // assert valid falls (note, assume this in cache controller
+    // assert lookup valid only high for one cycle (note, this is assumed in cache_controller.sv)
     assert_lookup_falls : assert property(
         implies_1cycle(
             clk, !reset_n,
@@ -190,20 +188,26 @@ module lookup_props #(
     // Aux Code 
     // 
     //------------------------------------------
+
+    // track past state so that way selection can be verified appropriately 
     always@(posedge clk) begin
         integer i; 
 
+        // for each way, check if the arb_tag was a hit 1 cycle in the past
         for(i = 0; i < NUM_WAYS; i = i + 1) begin
             was_hit[i] <= $past(i_addr_tag_store[i][TAG_WIDTH - 1 : 0]) == arb_tag &&
                                         $past(i_addr_tag_store[i][VALID]) == 1;
             was_invalid[i] <= $past(i_addr_tag_store[i][VALID]) == 0; 
         end
         
+        // for each way, check if selected for LRU 1 cycle in the past 
         was_lru[0] <= ($past(history[arb_set]) == 3'b100) || ($past(history[arb_set]) == 3'b000);
         was_lru[1] <= ($past(history[arb_set]) == 3'b110) || ($past(history[arb_set]) == 3'b010);
         was_lru[2] <= ($past(history[arb_set]) == 3'b001) || ($past(history[arb_set]) == 3'b011);
         was_lru[3] <= ($past(history[arb_set]) == 3'b101) || ($past(history[arb_set]) == 3'b111);                                       
     end 
+
+    // track way selected for arb_addr
     always@(posedge clk) begin
         integer n; 
 
@@ -212,6 +216,7 @@ module lookup_props #(
             arb_hit <= 0; 
         end 
         else begin
+            // we know that way will be selected one cycle after a request, so use past. 
             if($past(i_lookup_req) && $past(i_addr_set == arb_set) && $past(i_addr_tag == arb_tag)) begin
                 arb_way <= o_way_select; 
             end 

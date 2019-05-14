@@ -70,13 +70,6 @@ module cache_way_props #(
         )
     );
 
-
-    //------------------------------------------
-    // 
-    // Helper functions
-    // 
-    //------------------------------------------
-    
     //------------------------------------------
     // 
     // Assert 
@@ -103,19 +96,25 @@ module cache_way_props #(
     // Aux Code 
     // 
     //------------------------------------------
+
+    // this code tracks what the current value at arb_addr should be in the tag store
     always@(posedge clk) begin
         if(!reset_n) begin
             arb_tag_1 <= 0; 
             arb_tag_2 <= 0; 
         end 
         else begin
-            arb_tag_1 <= arb_tag_2; // update current tag for reads 
+            // writes are only visible 1 cycle later, so required. 
+            arb_tag_1 <= arb_tag_2;  
+
+            // update the data on a write 
             if(i_tag_wen && arb_addr == i_cache_way_addr) begin
                 arb_tag_2 <= i_tag_data; 
             end
         end 
     end
    
+    // this code tracks what the current value at arb_addr should be in the data store
     always@(posedge clk) begin
         integer n; 
 
@@ -124,7 +123,10 @@ module cache_way_props #(
             arb_data_2 <= 0; 
         end 
         else begin
-            arb_data_1 <= arb_data_2; // update current data for reads
+            // writes are only visible 1 cycle later, so required. 
+            arb_data_1 <= arb_data_2; 
+
+             // update the data on a write; must remember byte enable 
             if(i_cache_way_wen && arb_addr == i_cache_way_addr) begin 
                 for(n = 0; n < CACHE_WAY_DATA_SIZE_BYTES; n = n + 1) begin   
                     if(i_cache_way_ben[n]) begin

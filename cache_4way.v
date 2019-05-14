@@ -52,6 +52,7 @@ module cache_4way # (
     input wire [CACHE_TAG_WIDTH - 1 : 0] i_tag_data;
     output reg [CACHE_TAG_WIDTH - 1 : 0] o_tag_data [0 : NUM_CACHE_WAY - 1];  
 
+    // generate all the cache ways! yay verilog! 
     genvar i; 
     generate 
         for(i = 0; i < NUM_CACHE_WAY; i = i + 1) begin : gen_cache_way
@@ -66,12 +67,12 @@ module cache_4way # (
                 .reset_n(reset_n),
 
                 .i_cache_way_addr(i_cache_addr),
-                .i_cache_way_wen(i_cache_wen && i_way_select[i]), 
+                .i_cache_way_wen(i_cache_wen && i_way_select[i]), // i_way_select acts as a chip select 
                 .i_cache_way_ben(i_cache_ben),
                 .i_cache_way_data(i_cache_data),
                 .o_cache_way_data(o_cache_data[i]), 
 
-                .i_tag_wen(i_tag_wen && i_way_select[i]), 
+                .i_tag_wen(i_tag_wen && i_way_select[i]), // i_way_select acts a chip select 
                 .i_tag_data(i_tag_data),
                 .o_tag_data(o_tag_data[i])  
             );
