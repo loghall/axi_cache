@@ -22,4 +22,6 @@ Verification files:
 Other relevant files:
 - props_pkg.sv : contains parameterized properties for commonly used assertions/assumptions
 - intf_props_pkg.sv : contains parameterized properties specifically dedicated to interface behavior
-  - includes macros for each of verification with our design. 
+  - includes macros for each of verification with our design.
+  
+NOTE: There were a lot more commits, but we squash merged to get rid of some of the more embarassing commit messages on our branches.
