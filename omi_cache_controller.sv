@@ -53,8 +53,6 @@ module omi_props #(
     //------------------------------------------
     // Module Level Assumes As Noted in Specification
     //------------------------------------------
-    `ADDR_ALIGN(clk, reset_n, i_cache_addr, assume, 0, i_cache_addr_assume)
-
     assume_arb_addr_constant : assume property(
         implies_1cycle(
             clk, !reset_n,
@@ -63,75 +61,42 @@ module omi_props #(
         )
     );
 
-    // OMI Master signal assumes and asserts
+    //------------------------------------------
+    // 
+    // OMI Master Assumes (from CPU)
+    // 
+    //------------------------------------------
     `REQ_PROP(clk, reset_n, i_cache_req, o_cache_rdy, assume, 0, assume_rdy)
     `REQ_SIGNAL_PROP(clk, reset_n, i_cache_req, i_cache_addr, assume, 0, assume_i_cache_addr)
     `REQ_SIGNAL_PROP(clk, reset_n, i_cache_req, i_cache_wen, assume, 0, assume_i_cache_wen)
-    `REQ_SIGNAL_PROP(clk, reset_n, i_cache_req && i_cache_wen, i_cache_ben, assume, 0, assume_i_cache_ben)
+    `REQ_SIGNAL_PROP(clk, reset_n, i_cache_req, i_cache_ben, assume, 0, assume_i_cache_ben)
     `REQ_SIGNAL_PROP(clk, reset_n, i_cache_req, i_cache_data, assume, 0, assume_i_cache_data)
     `REQ_SIGNAL_PROP(clk, reset_n, i_cache_req, i_cache_len, assume, 0, assume_i_cache_len)
+    `ADDR_ALIGN(clk, reset_n, i_cache_addr, assume, 0, i_cache_addr_assume)
 
     assume_i_cache_len_restrict: assume property(
         implies_instant(
             clk, !reset_n,
             1,
-            i_cache_len <= 4
+            i_cache_len <= 2
         )
     );
 
+    //------------------------------------------
+    // 
+    // OMI Slave Asserts (from CPU)
+    // 
+    //------------------------------------------
+    `RDY_PROP(clk, reset_n, o_cache_rdy, i_cache_req, assert, !reset_n, o_cache_rdy_assert)
+    `VALID_PROP(clk, reset_n, o_cache_rdy, o_cache_valid, i_cache_wen, i_cache_len, assert, !reset_n, o_cache_valid_assert)
 
-    // OMI Slave signal assumes and asserts
+    //------------------------------------------
+    // 
+    // OMI Slave Assumes (to mem)
+    // 
+    //------------------------------------------
+    `RDY_PROP(clk, reset_n, i_mem_rdy, o_mem_req, assume, 0, i_mem_rdy_assume)
     `VALID_PROP(clk, reset_n, i_mem_rdy, i_mem_valid, o_mem_wen, o_mem_len, assume, 0, i_mem_valid_assume)
-
-    assume_i_mem_low_when_req: assume property(
-        implies_instant(
-            clk, !reset_n,
-            $fell(i_mem_rdy),
-            $past(o_mem_req && i_mem_rdy, 1)
-        )
-    );
-
-    //------------------------------------------
-    // 
-    // Global asserts for OMI MASTER
-    // (from/to CPU)
-    // 
-    //------------------------------------------
-    `REQ_PROP(clk, reset_n, i_cache_req, o_cache_rdy, assert, !reset_n, assert_ack_req)
-
-    assert_data_0_invalid: assert property(
-        implies_instant(
-            clk, !reset_n,
-            o_cache_valid == 0,
-            o_cache_data == 0
-        )
-    );
-
-    assert_data_0_until_req: assert property(
-        implies_instant(
-            clk, !reset_n,
-            o_cache_rdy == 1,
-            o_cache_data == 0
-        )
-    );
-
-    assert_valid_0_when_rdy: assert property(
-        implies_instant(
-            clk, !reset_n,
-            o_cache_rdy,
-            !o_cache_valid
-        )
-    );
-
-    /*
-    assert_valid_thru_reads: assert property(
-        implies_1cycle(
-            clk, !reset_n,
-            rdy && len_ctr < i_cache_len_r && !i_cache_wen_r && state == STATE_READ_CACHE,
-            o_cache_valid
-        )
-    );
-    */
 
     //------------------------------------------
     // 
@@ -145,31 +110,6 @@ module omi_props #(
     `REQ_SIGNAL_PROP(clk, reset_n, o_mem_req && o_mem_wen, o_mem_ben, assert, !reset_n, assert_o_mem_ben)
     `REQ_SIGNAL_PROP(clk, reset_n, o_mem_req, o_mem_data, assert, !reset_n, assert_o_mem_data)
     `REQ_SIGNAL_PROP(clk, reset_n, o_mem_req, o_mem_len, assert, !reset_n, assert_o_mem_len)
-
-    //------------------------------------------
-    // 
-    // Aux code
-    // 
-    //------------------------------------------
-    integer len_ctr;
-    reg [7 : 0] i_cache_len_r;
-    reg i_cache_wen_r;
-
-    always@(posedge clk) begin
-        if(!reset_n) begin
-            len_ctr <= 0;
-        end
-        else begin
-            if(i_cache_req && o_cache_rdy) begin
-                i_cache_len_r <= i_cache_len;
-                len_ctr <= 0;
-                i_cache_wen_r <= i_cache_wen;
-            end
-            else if(rdy && !i_cache_wen_r) begin
-                len_ctr <= len_ctr + 1;
-            end
-        end
-    end
 
 endmodule
 

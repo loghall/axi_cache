@@ -9,9 +9,6 @@
     ); 
 
 `define REQ_PROP(CLK, RESET_N, REQ, SLV_RDY, PROPTYPE, DISABLE, ID) \
-    ID``_rdy_hi_1: PROPTYPE`` property( \
-        force_value_instant(CLK``, DISABLE``, $rose(REQ``), SLV_RDY``, 1) \
-    ); \
     ID``_fall_1: PROPTYPE`` property( \
         force_zero_1cycle(CLK``, DISABLE``, $fell(SLV_RDY``), REQ``) \
     ); \
@@ -31,23 +28,29 @@
     integer valid_ctr; \
     reg wen; \
     reg [7 : 0] req_len; \
+    reg proc; \
     always@(posedge CLK``) begin \
         if(!RESET_N``) begin \
             valid_ctr <= 0; \
             req_len <= 0; \
+            proc <= 0; \
         end \
         else begin \
-             if(VALID``) begin \
+            if(VALID``) begin \
                 valid_ctr <= valid_ctr + 1; \
             end \
-            else if($fell(RDY``)) begin \
+            else if($rose(RDY``)) begin \
+                proc <= 0; \
+            end \
+            else if($fell(RDY``) && $past(!M_WEN``, 1)) begin \
                 valid_ctr <= 0; \
                 req_len <= LEN``;  \
+                proc <= 1; \
             end \
         end \
     end \
     ID``_ctr: PROPTYPE`` property( \
-            force_value_1cycle(CLK``, DISABLE``, $rose(RDY``), valid_ctr, req_len) \
+            force_value_instant(CLK``, DISABLE``, $fell(proc), $past(valid_ctr), $past(req_len)) \
         ); \
     ID``_rdy_valid: PROPTYPE`` property( \
             force_zero_instant(CLK``, DISABLE``, RDY``, VALID``) \
