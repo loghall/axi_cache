@@ -265,7 +265,6 @@ module cache_props #(
         ) 
     );
 
-    /*
     assert_write_thru : assert property( // write through for all writes 
         implies_instant(
             clk, !reset_n,
@@ -273,7 +272,6 @@ module cache_props #(
             arb_mem_waddr == arb_addr && arb_mem_ben == i_ben_r && arb_mem_wdata == i_data_r
         ) 
     );
-    */
 
     /*
     assert_lookup_req_1cycle : assert property( // request only high for a single cycle
@@ -317,8 +315,6 @@ module cache_props #(
             i_wen_r <= 0; 
             i_ben_r <= 0;
             i_data_r <= 0; 
-
-            mem_valid_ctr <= 0; 
         end 
         else begin 
             if(i_req && o_rdy) begin
@@ -326,15 +322,24 @@ module cache_props #(
                 i_wen_r <= i_wen; 
                 i_ben_r <= i_ben;
                 i_data_r <= i_data; 
-                
-                mem_valid_ctr <= 0; 
+            end
+        end
+    end
+
+    always@(posedge clk) begin
+        if(!reset_n) begin
+            mem_valid_ctr <= 0; 
+        end 
+        else begin 
+            if($fell(i_mem_rdy))begin
+                mem_valid_ctr <= 0;
             end
             else if(i_mem_valid) begin
                 mem_valid_ctr <= mem_valid_ctr + 4; 
             end
         end
-    end
-
+    end 
+  
     //------------------------------------------
     // 
     // aux code for arb addr  and bb assumptions
