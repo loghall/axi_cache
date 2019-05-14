@@ -7,6 +7,6 @@ analyze -sv cache_4way.sv
 elaborate -bbox_a 20000 -top cache_4way
 clock clk
 reset -expression {!reset_n}
-#prove -bg -all
+prove -bg -all
 
 
